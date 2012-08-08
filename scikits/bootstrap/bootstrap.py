@@ -96,7 +96,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     else:
         raise ValueError()
 
-def ci_abc(data, stat, alpha, epsilon = 0.001):
+def ci_abc(data, stat, alpha=0.05, epsilon = 0.001):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the non-parametric approximate bootstrap

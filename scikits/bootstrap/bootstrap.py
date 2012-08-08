@@ -81,7 +81,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
         # Statistics of the jackknife distribution
         jackindexes = jackknife_indexes(data)
-        jstat = [statfunction(x) for x in data[jackindexes]]
+        jstat = [statfunction(data[index]) for index in jackindexes]
         jmean = np.mean(jstat)
 
         # Acceleration value

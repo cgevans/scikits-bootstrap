@@ -52,7 +52,7 @@ References
 ----------
 Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     """
-    
+
     # Deal with the alpha values
     if np.iterable(alpha):
         alphas = alpha
@@ -86,20 +86,20 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
         # Acceleration value
         a = np.sum( (jstat - jmean)**3 ) / ( 6.0 * np.sum( (jstat - jmean)**2 )**1.5 )
-        
+
         zs = z0 + norm.ppf(alphas)
 
         avals = norm.cdf(z0 + zs/(1-a*zs))
 
-        return stat_sorted[np.round(n_samples*avals).astype('int')]    
-    
+        return stat_sorted[np.round(n_samples*avals).astype('int')]
+
     else:
         raise ValueError()
 
-def ci_abc(data, stat, alpha, epsilon = 0.001):    
+def ci_abc(data, stat, alpha, epsilon = 0.001):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
-applies to that data, computes the non-parametric approximate bootstrap 
+applies to that data, computes the non-parametric approximate bootstrap
 confidence (ABC) interval for ``stat`` on that data. Data points are assumed
 to be delineated by axis 0.
 
@@ -119,7 +119,7 @@ alpha: float or iterable, optional
     each desired percentile.
 epsilon: float
     The step size for finite difference calculations. (default=0.001)
-    
+
 Returns
 -------
 confidences: tuple of floats
@@ -132,18 +132,18 @@ bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
     """
     # Deal with the alpha values
     if not np.iterable(alpha):
-        alphas = np.array([alpha/2,1-alpha/2])
-    
+        alpha = np.array([alpha/2,1-alpha/2])
+
     n = data.shape[0]*1.0
     nn = data.shape[0]
-    
+
     I = np.identity(nn)
     ep = epsilon / n*1.0
     p0 = np.repeat(1.0/n,nn)
-    
+
     t1 = np.zeros(nn); t2 = np.zeros(nn)
     t0 = stat(data,p0)
-    
+
     # There MUST be a better way to do this!
     for i in range(0,nn):
         di = I[i] - p0
@@ -151,7 +151,7 @@ bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
         tm = stat(data,p0-ep*di)
         t1[i] = (tp-tm)/(2*ep)
         t2[i] = (tp-2*t0+tm)/ep**2
-    
+
     sighat = np.sqrt(np.sum(t1**2))/n
     a = (np.sum(t1**3))/(6*n**3*sighat**3)
     delta = t1/(n**2*sighat)
@@ -165,8 +165,8 @@ bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
     abc = np.zeros_like(alpha)
     for i in range(0,len(alpha)):
         abc[i] = stat(data,p0+za[i]*delta)
-        
-    return abc    
+
+    return abc
 
 def bootstrap_indexes(data, n_samples=10000):
     """

@@ -55,7 +55,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
     # Deal with the alpha values
     if np.iterable(alpha):
-        alphas = alpha
+        alphas = np.array(alpha)
     else:
         alphas = np.array([alpha/2,1-alpha/2])
 
@@ -68,7 +68,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
     # Percentile Interval Method
     if method == 'pi':
-        return ( stat_sorted[round(n_samples*alpha/2)], stat_sorted[round(n_samples*(1-alpha/2))] )
+        return stat_sorted[(n_samples*alphas).astype('int')]
 
     # Bias-Corrected Accelerated Method
     elif method == 'bca':
@@ -133,6 +133,8 @@ bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
     # Deal with the alpha values
     if not np.iterable(alpha):
         alpha = np.array([alpha/2,1-alpha/2])
+    else:
+        alpha = np.array(alpha)
 
     n = data.shape[0]*1.0
     nn = data.shape[0]

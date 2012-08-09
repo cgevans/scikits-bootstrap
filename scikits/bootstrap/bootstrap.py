@@ -193,6 +193,6 @@ a list of arrays where each array is a set of jackknife indexes.
 For a given set of data Y, the jackknife sample J[i] is defined as the data set
 Y with the ith data point deleted.
     """
-    # FIXME: this is rather messy.
-    return (lambda n: np.delete(np.tile(np.array(range(0,n)),n),range(0,n*n,n+1)).reshape((n,n-1)))(len(data))
+    base = np.arange(0,len(data))
+    return np.vstack( (np.delete(base,i) for i in base) )
 

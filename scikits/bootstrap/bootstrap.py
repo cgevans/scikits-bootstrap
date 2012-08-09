@@ -59,6 +59,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     else:
         alphas = np.array([alpha/2,1-alpha/2])
 
+    # Ensure that the data is actually an array. This isn't nice to pandas,
+    # but pandas seems much much slower and the indexes become a problem.
+    data = np.array(data)
+
     # We don't need to generate actual samples; that would take more memory.
     # Instead, we can generate just the indexes, and then apply the statfun
     # to those indexes.
@@ -135,6 +139,10 @@ bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
         alpha = np.array([alpha/2,1-alpha/2])
     else:
         alpha = np.array(alpha)
+
+    # Ensure that the data is actually an array. This isn't nice to pandas,
+    # but pandas seems much much slower and the indexes become a problem.
+    data = np.array(data)
 
     n = data.shape[0]*1.0
     nn = data.shape[0]

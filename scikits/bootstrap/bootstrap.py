@@ -68,11 +68,11 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # to those indexes.
     bootindexes = bootstrap_indexes( data, n_samples )
     stat = np.array([statfunction(data[indexes]) for indexes in bootindexes])
-    stat_sorted = np.sort(stat)
+    stat.sort()
 
     # Percentile Interval Method
     if method == 'pi':
-        return stat_sorted[(n_samples*alphas).astype('int')]
+        return stat[(n_samples*alphas).astype('int')]
 
     # Bias-Corrected Accelerated Method
     elif method == 'bca':
@@ -95,7 +95,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
         avals = norm.cdf(z0 + zs/(1-a*zs))
 
-        return stat_sorted[np.round(n_samples*avals).astype('int')]
+        return stat[np.round(n_samples*avals).astype('int')]
 
     else:
         raise ValueError()
@@ -171,7 +171,7 @@ bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
     z0 = norm.ppf(2*norm.cdf(a)*norm.cdf(-curv))
     Z = z0+norm.ppf(alpha)
     za = Z/(1-a*Z)**2
-    stan = t0 + sighat * norm.ppf(alpha)
+    # stan = t0 + sighat * norm.ppf(alpha)
     abc = np.zeros_like(alpha)
     for i in range(0,len(alpha)):
         abc[i] = stat(data,p0+za[i]*delta)

@@ -2,7 +2,7 @@ from numpy.random import randint
 from scipy.stats import norm
 import numpy as np
 
-def ci(data, statfunction, alpha=0.05, n_samples=10000, method='bca'):
+def ci(data, statfunction=np.mean, alpha=0.05, n_samples=10000, method='bca'):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -100,7 +100,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     else:
         raise ValueError()
 
-def ci_abc(data, stat, alpha=0.05, epsilon = 0.001):
+def ci_abc(data, stat=lambda x,y: np.average(x,weights=y), alpha=0.05, epsilon = 0.001):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the non-parametric approximate bootstrap
@@ -195,4 +195,25 @@ Y with the ith data point deleted.
     """
     base = np.arange(0,len(data))
     return np.vstack( (np.delete(base,i) for i in base) )
+
+def subsample_indexes(data, n_samples=1000, size=0.5):
+    """
+Given data points data, where axis 0 is considered to delineate points, return
+a list of arrays where each array is indexes a subsample of the data of size
+``size``. If size is >= 1, then it will be taken to be an absolute size. If
+size < 1, it will be taken to be a fraction of the data size. If size == -1, it
+will be taken to mean subsamples the same size as the sample (ie, permuted
+samples)
+    """
+    if size == -1:
+        size = len(data)
+    elif (size < 1) and (size > 0):
+        size = round(size*len(data))
+    elif size > 1:
+        pass
+    else:
+        raise ValueError("size cannot be {0}".format(size))
+    base = np.tile(np.arange(len(data)),(n_samples,1))
+    for sample in base: np.random.shuffle(sample)
+    return base[:,0:size]
 

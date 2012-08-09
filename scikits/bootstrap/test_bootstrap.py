@@ -26,12 +26,30 @@ class test_ci:
         indexes = boot.jackknife_indexes(np.array([1,2,3]))
         np.testing.assert_array_equal(indexes, np.array([[1, 2],[0, 2],[0, 1]]))
 
+    def test_subsample_indexes(self):
+        indexes = boot.subsample_indexes(self.data, 1000, 0.5)
+        # Each sample when sorted must contain len(self.data)/2 unique numbers (eg, be entirely unique)
+        for x in indexes:
+            np.testing.assert_(len(np.unique(x)) == len(self.data)/2)
+
+    def test_subsample_indexes_notsame(self):
+        np.random.seed(1234567890)
+        indexes = boot.subsample_indexes(np.arange(0,50), 1000, -1)
+        # Test to make sure that subsamples are not all the same.
+        # In theory, this test could fail even with correct code, but in
+        # practice the probability is too low to care, and the test is useful.
+        np.testing.assert_(not np.all(indexes[0]==indexes[1:]))
+
     def test_abc_simple(self):
         results = boot.ci_abc(self.data,lambda x,y: np.average(x,weights=y))
         np.testing.assert_array_almost_equal(results,np.array([ 0.20982275,  1.20374686]))
 
     def test_abc_multialpha(self):
         results = boot.ci_abc(self.data,lambda x,y: np.average(x,weights=y),alpha=(0.1,0.2,0.8,0.9))
+        np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
+
+    def test_abc_multialpha_defaultstat(self):
+        results = boot.ci_abc(self.data,alpha=(0.1,0.2,0.8,0.9))
         np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
 
 # I can't actually figure out how to make this work right now...

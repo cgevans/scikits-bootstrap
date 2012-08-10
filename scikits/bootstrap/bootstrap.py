@@ -183,7 +183,7 @@ def bootstrap_indexes(data, n_samples=10000):
 Given data points data, where axis 0 is considered to delineate points, return
 a list of arrays where each array is a set of bootstrap indexes.
     """
-    return randint(data.shape[0],size=(n_samples,data.shape[0]))
+    return ( randint(data.shape[0],size=data.shape[0] ) for a in xrange(0,n_samples) )
 
 def jackknife_indexes(data):
     """
@@ -194,7 +194,7 @@ For a given set of data Y, the jackknife sample J[i] is defined as the data set
 Y with the ith data point deleted.
     """
     base = np.arange(0,len(data))
-    return np.vstack( (np.delete(base,i) for i in base) )
+    return (np.delete(base,i) for i in base)
 
 def subsample_indexes(data, n_samples=1000, size=0.5):
     """

@@ -1,7 +1,6 @@
 from numpy.random import randint
 from scipy.stats import norm
 import numpy as np
-import ipdb
 import warnings
 
 class InstabilityWarning(UserWarning):

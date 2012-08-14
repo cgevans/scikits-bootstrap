@@ -1,6 +1,15 @@
 from numpy.random import randint
 from scipy.stats import norm
 import numpy as np
+import ipdb
+import warnings
+
+class InstabilityWarning(UserWarning):
+    """Issued when results may be unstable."""
+    pass
+
+# On import, make sure that InstabilityWarnings are not filtered out.
+warnings.simplefilter('always',InstabilityWarning)
 
 def ci(data, statfunction=np.mean, alpha=0.05, n_samples=10000, method='bca'):
     """
@@ -72,7 +81,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
     # Percentile Interval Method
     if method == 'pi':
-        return stat[(n_samples*alphas).astype('int')]
+        avals = alphas
 
     # Bias-Corrected Accelerated Method
     elif method == 'bca':
@@ -81,24 +90,33 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         ostat = statfunction(data)
 
         # The bias correction value.
-        z0 = norm.ppf( ( 1.0*np.sum(stat < ostat)  ) / n_samples )
+        z0 = norm.ppf( ( 1.0*np.sum(stat < ostat, axis=0)  ) / n_samples )
 
         # Statistics of the jackknife distribution
         jackindexes = jackknife_indexes(data)
         jstat = [statfunction(data[index]) for index in jackindexes]
-        jmean = np.mean(jstat)
+        jmean = np.mean(jstat,axis=0)
 
         # Acceleration value
-        a = np.sum( (jstat - jmean)**3 ) / ( 6.0 * np.sum( (jstat - jmean)**2 )**1.5 )
+        a = np.sum( (jmean - jstat)**3, axis=0 ) / ( 6.0 * np.sum( (jmean - jstat)**2, axis=0)**1.5 )
 
         zs = z0 + norm.ppf(alphas)
 
         avals = norm.cdf(z0 + zs/(1-a*zs))
 
-        return stat[np.round(n_samples*avals).astype('int')]
-
     else:
-        raise ValueError()
+        raise ValueError("Method {0} is not supported.".format(method))
+
+    nvals = np.round((n_samples-1)*avals).astype('int')
+
+    if np.any(nvals==0) or np.any(nvals==n_samples-1):
+        warnings.warn("Some values used extremal samples; results are probably unstable.", InstabilityWarning)
+    elif np.any(nvals<10) or np.any(nvals>=n_samples-10):
+        warnings.warn("Some values used top 10 low/high samples; results may be unstable.", InstabilityWarning)
+
+    return stat[np.round((n_samples-1)*avals).astype('int')]
+
+
 
 def ci_abc(data, stat=lambda x,y: np.average(x,weights=y), alpha=0.05, epsilon = 0.001):
     """

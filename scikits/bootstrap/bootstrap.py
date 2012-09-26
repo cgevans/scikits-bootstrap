@@ -10,7 +10,8 @@ class InstabilityWarning(UserWarning):
 # On import, make sure that InstabilityWarnings are not filtered out.
 warnings.simplefilter('always',InstabilityWarning)
 
-def ci(data, statfunction=np.mean, alpha=0.05, n_samples=10000, method='bca'):
+def ci(data, statfunction=np.mean, alpha=0.05, n_samples=10000, method='bca',
+        *args, **kwargs):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -35,6 +36,8 @@ n_samples: float, optional
     The number of bootstrap samples to use (default=10000)
 method: string
     The method to use: one of 'pi' or 'bca' (default='bca')
+
+Additional parameters are passed to ``statfunction``.
 
 Returns
 -------
@@ -75,7 +78,8 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # Instead, we can generate just the indexes, and then apply the statfun
     # to those indexes.
     bootindexes = bootstrap_indexes( data, n_samples )
-    stat = np.array([statfunction(data[indexes]) for indexes in bootindexes])
+    stat = np.array([statfunction(data[indexes], *args, **kwargs) for indexes
+        in bootindexes])
     stat.sort()
 
     # Percentile Interval Method

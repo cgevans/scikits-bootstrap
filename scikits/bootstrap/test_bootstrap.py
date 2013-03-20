@@ -76,7 +76,7 @@ class test_ci:
         results_default = boot.ci(self.data,np.average)
         np.random.seed(1234567890)
         results_errorbar = boot.ci(self.data,np.average,output='errorbar')
-        np.testing.assert_array_almost_equal(results_errorbar,abs(np.average(self.data)-results))
+        np.testing.assert_array_almost_equal(results_errorbar.T,abs(np.average(self.data)-results_default)[np.newaxis])
 
     def test_bca_multialpha(self):
         np.random.seed(1234567890)

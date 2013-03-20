@@ -10,7 +10,7 @@ class InstabilityWarning(UserWarning):
 # On import, make sure that InstabilityWarnings are not filtered out.
 warnings.simplefilter('always',InstabilityWarning)
 
-def ci(data, statfunction=np.mean, alpha=0.05, n_samples=10000, method='bca'):
+def ci(data, statfunction=np.mean, alpha=0.05, n_samples=10000, method='bca', output='lowhigh'):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -33,8 +33,12 @@ alpha: float or iterable, optional
     each desired percentile.
 n_samples: float, optional
     The number of bootstrap samples to use (default=10000)
-method: string
+method: string, optional
     The method to use: one of 'pi' or 'bca' (default='bca')
+output: string, optional
+    The format of the output. 'lowhigh' gives low and high confidence interval
+    values. 'errorbar' gives transposed abs(value-confidence interval value) values
+    that are suitable for use with matplotlib's errorbar function. (default='lowhigh')
 
 Returns
 -------
@@ -113,7 +117,14 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     elif np.any(nvals<10) or np.any(nvals>=n_samples-10):
         warnings.warn("Some values used top 10 low/high samples; results may be unstable.", InstabilityWarning)
 
-    return stat[np.round((n_samples-1)*avals).astype('int')]
+    if output == 'lowhigh':
+        return stat[np.round((n_samples-1)*avals).astype('int')]
+    elif output == 'errorbar':
+        return abs(statfunction(data)-stat[np.round((n_samples-1)*avals).astype('int')])[np.newaxis].T
+    else:
+        raise ValueError("Output option {0} is not supported.".format(output))
+    
+    
 
 
 

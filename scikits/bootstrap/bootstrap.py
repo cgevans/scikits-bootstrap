@@ -10,7 +10,7 @@ class InstabilityWarning(UserWarning):
 # On import, make sure that InstabilityWarnings are not filtered out.
 warnings.simplefilter('always',InstabilityWarning)
 
-def ci(data, statfunction=np.mean, alpha=0.05, n_samples=10000, method='bca', output='lowhigh'):
+def ci(data, statfunction=np.average, alpha=0.05, n_samples=10000, method='bca', output='lowhigh', epsilon=0.001):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -19,13 +19,19 @@ axis 0.
 
 Parameters
 ----------
-data: array_like, shape (N, ...)
+data: array_like, shape (N, ...) OR list of array_like all with shape (N, ...)
     Input data. Data points are assumed to be delineated by axis 0. Beyond this,
     the shape doesn't matter, so long as ``statfunction`` can be applied to the
-    array.
-statfunction: function
+    array. If a list of array_likes is passed, then samples from each array (along
+    axis 0) are passed in order as separate parameters to the statfunction.
+statfunction: function (data, weights=(weights, optional)) -> value
     This function should accept samples of data from ``data``. It is applied
-    to these samples individually.
+    to these samples individually. 
+    
+    If using the ABC method, the function _must_ accept a named ``weights`` 
+    parameter which will be an array_like with weights for each sample, and 
+    must return a _weighted_ result. Otherwise this parameter is not used
+    or required. Note that numpy's np.average accepts this. (default=np.average)
 alpha: float or iterable, optional
     The percentiles to use for the confidence interval (default=0.05). If this
     is a float, the returned values are (alpha/2, 1-alpha/2) percentile confidence
@@ -34,12 +40,15 @@ alpha: float or iterable, optional
 n_samples: float, optional
     The number of bootstrap samples to use (default=10000)
 method: string, optional
-    The method to use: one of 'pi' or 'bca' (default='bca')
+    The method to use: one of 'pi', 'bca', or 'abc' (default='bca')
 output: string, optional
     The format of the output. 'lowhigh' gives low and high confidence interval
     values. 'errorbar' gives transposed abs(value-confidence interval value) values
     that are suitable for use with matplotlib's errorbar function. (default='lowhigh')
-
+epsilon: float, optional (only for ABC method)
+    The step size for finite difference calculations in the ABC method. Ignored for
+    all other methods. (default=0.001)
+    
 Returns
 -------
 confidences: tuple of floats
@@ -59,6 +68,12 @@ Calculation Methods
     better results, and is generally recommended for normal situations. Note
     that in cases where the statistic is smooth, and can be expressed with
     weights, the ABC method will give approximated results much, much faster.
+'abc': Approximate Bootstrap Confidence (Efron FIXME)
+    This method provides approximated bootstrap confidence intervals without
+    actually taking bootstrap samples. This requires that the statistic be 
+    smooth, and allow for weighting of individual points with a weights=
+    parameter (note that np.average allows this). This is _much_ faster
+    than all other methods for situations where it can be used.
 
 References
 ----------
@@ -74,6 +89,47 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # Ensure that the data is actually an array. This isn't nice to pandas,
     # but pandas seems much much slower and the indexes become a problem.
     data = np.array(data)
+
+    # Deal with ABC *now*, as it doesn't need samples.
+    if method == 'abc':
+        n = data.shape[0]*1.0
+        nn = data.shape[0]
+
+        I = np.identity(nn)
+        ep = epsilon / n*1.0
+        p0 = np.repeat(1.0/n,nn)
+
+        t1 = np.zeros(nn); t2 = np.zeros(nn)
+        t0 = statfunction(data,weights=p0)
+
+        # There MUST be a better way to do this!
+        for i in range(0,nn):
+            di = I[i] - p0
+            tp = statfunction(data,weights=p0+ep*di)
+            tm = statfunction(data,weights=p0-ep*di)
+            t1[i] = (tp-tm)/(2*ep)
+            t2[i] = (tp-2*t0+tm)/ep**2
+
+        sighat = np.sqrt(np.sum(t1**2))/n
+        a = (np.sum(t1**3))/(6*n**3*sighat**3)
+        delta = t1/(n**2*sighat)
+        cq = (statfunction(data,weights=p0+ep*delta)-2*t0+statfunction(data,weights=p0-ep*delta))/(2*sighat*ep**2)
+        bhat = np.sum(t2)/(2*n**2)
+        curv = bhat/sighat-cq
+        z0 = norm.ppf(2*norm.cdf(a)*norm.cdf(-curv))
+        Z = z0+norm.ppf(alphas)
+        za = Z/(1-a*Z)**2
+        # stan = t0 + sighat * norm.ppf(alphas)
+        abc = np.zeros_like(alphas)
+        for i in range(0,len(alphas)):
+            abc[i] = statfunction(data,weights=p0+za[i]*delta)
+
+        if output == 'lowhigh':
+            return abc
+        elif output == 'errorbar':
+            return abs(abc-statfunction(data))[np.newaxis].T
+        else:
+            raise ValueError("Output option {0} is not supported.".format(output))
 
     # We don't need to generate actual samples; that would take more memory.
     # Instead, we can generate just the indexes, and then apply the statfun
@@ -106,7 +162,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         zs = z0 + norm.ppf(alphas)
 
         avals = norm.cdf(z0 + zs/(1-a*zs))
-
+    
     else:
         raise ValueError("Method {0} is not supported.".format(method))
 
@@ -130,6 +186,8 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
 def ci_abc(data, stat=lambda x,y: np.average(x,weights=y), alpha=0.05, epsilon = 0.001):
     """
+.. note:: Deprecated. This functionality is now rolled into ci.
+          
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the non-parametric approximate bootstrap
 confidence (ABC) interval for ``stat`` on that data. Data points are assumed

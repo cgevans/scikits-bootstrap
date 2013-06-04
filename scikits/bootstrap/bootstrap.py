@@ -10,7 +10,7 @@ class InstabilityWarning(UserWarning):
 # On import, make sure that InstabilityWarnings are not filtered out.
 warnings.simplefilter('always',InstabilityWarning)
 
-def ci(data, statfunction=np.average, alpha=0.05, n_samples=10000, method='bca', output='lowhigh', epsilon=0.001):
+def ci(data, statfunction=np.average, alpha=0.05, n_samples=10000, method='bca', output='lowhigh', epsilon=0.001, multi=None):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -19,11 +19,13 @@ axis 0.
 
 Parameters
 ----------
-data: array_like, shape (N, ...) OR list of array_like all with shape (N, ...)
+data: array_like, shape (N, ...) OR tuple of array_like all with shape (N, ...)
     Input data. Data points are assumed to be delineated by axis 0. Beyond this,
     the shape doesn't matter, so long as ``statfunction`` can be applied to the
-    array. If a list of array_likes is passed, then samples from each array (along
-    axis 0) are passed in order as separate parameters to the statfunction.
+    array. If a tuple of array_likes is passed, then samples from each array (along
+    axis 0) are passed in order as separate parameters to the statfunction. The
+    type of data (single array or tuple of arrays) can be explicitly specified
+    by the multi parameter.
 statfunction: function (data, weights=(weights, optional)) -> value
     This function should accept samples of data from ``data``. It is applied
     to these samples individually. 
@@ -48,6 +50,10 @@ output: string, optional
 epsilon: float, optional (only for ABC method)
     The step size for finite difference calculations in the ABC method. Ignored for
     all other methods. (default=0.001)
+multi: boolean, optional
+    If False, assume data is a single array. If True, assume data is a tuple/other
+    iterable of arrays of the same length that should be sampled together. If None,
+    decide based on whether the data is an actual tuple. (default=None)
     
 Returns
 -------
@@ -86,34 +92,44 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     else:
         alphas = np.array([alpha/2,1-alpha/2])
 
+    if multi == None:
+      if isinstance(data, tuple):
+        multi = True
+      else:
+        multi = False
+
     # Ensure that the data is actually an array. This isn't nice to pandas,
     # but pandas seems much much slower and the indexes become a problem.
-    data = np.array(data)
+    if multi == False:
+      data = np.array(data)
+      tdata = (data,)
+    else:
+      tdata = tuple( np.array(x) for x in data )
 
     # Deal with ABC *now*, as it doesn't need samples.
     if method == 'abc':
-        n = data.shape[0]*1.0
-        nn = data.shape[0]
+        n = tdata[0].shape[0]*1.0
+        nn = tdata[0].shape[0]
 
         I = np.identity(nn)
         ep = epsilon / n*1.0
         p0 = np.repeat(1.0/n,nn)
 
         t1 = np.zeros(nn); t2 = np.zeros(nn)
-        t0 = statfunction(data,weights=p0)
+        t0 = statfunction(*tdata,weights=p0)
 
         # There MUST be a better way to do this!
         for i in range(0,nn):
             di = I[i] - p0
-            tp = statfunction(data,weights=p0+ep*di)
-            tm = statfunction(data,weights=p0-ep*di)
+            tp = statfunction(*tdata,weights=p0+ep*di)
+            tm = statfunction(*tdata,weights=p0-ep*di)
             t1[i] = (tp-tm)/(2*ep)
             t2[i] = (tp-2*t0+tm)/ep**2
 
         sighat = np.sqrt(np.sum(t1**2))/n
         a = (np.sum(t1**3))/(6*n**3*sighat**3)
         delta = t1/(n**2*sighat)
-        cq = (statfunction(data,weights=p0+ep*delta)-2*t0+statfunction(data,weights=p0-ep*delta))/(2*sighat*ep**2)
+        cq = (statfunction(*tdata,weights=p0+ep*delta)-2*t0+statfunction(*tdata,weights=p0-ep*delta))/(2*sighat*ep**2)
         bhat = np.sum(t2)/(2*n**2)
         curv = bhat/sighat-cq
         z0 = norm.ppf(2*norm.cdf(a)*norm.cdf(-curv))
@@ -122,20 +138,20 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         # stan = t0 + sighat * norm.ppf(alphas)
         abc = np.zeros_like(alphas)
         for i in range(0,len(alphas)):
-            abc[i] = statfunction(data,weights=p0+za[i]*delta)
+            abc[i] = statfunction(tdata,weights=p0+za[i]*delta)
 
         if output == 'lowhigh':
             return abc
         elif output == 'errorbar':
-            return abs(abc-statfunction(data))[np.newaxis].T
+            return abs(abc-statfunction(tdata))[np.newaxis].T
         else:
             raise ValueError("Output option {0} is not supported.".format(output))
 
     # We don't need to generate actual samples; that would take more memory.
     # Instead, we can generate just the indexes, and then apply the statfun
     # to those indexes.
-    bootindexes = bootstrap_indexes( data, n_samples )
-    stat = np.array([statfunction(data[indexes]) for indexes in bootindexes])
+    bootindexes = bootstrap_indexes( tdata[0], n_samples )
+    stat = np.array([statfunction(*(x[indexes] for x in tdata)) for indexes in bootindexes])
     stat.sort()
 
     # Percentile Interval Method
@@ -146,14 +162,14 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     elif method == 'bca':
 
         # The value of the statistic function applied just to the actual data.
-        ostat = statfunction(data)
+        ostat = statfunction(*tdata)
 
         # The bias correction value.
         z0 = norm.ppf( ( 1.0*np.sum(stat < ostat, axis=0)  ) / n_samples )
 
         # Statistics of the jackknife distribution
-        jackindexes = jackknife_indexes(data)
-        jstat = [statfunction(data[index]) for index in jackindexes]
+        jackindexes = jackknife_indexes(tdata[0])
+        jstat = [statfunction(*(x[indexes] for x in tdata)) for index in jackindexes]
         jmean = np.mean(jstat,axis=0)
 
         # Acceleration value

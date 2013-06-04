@@ -92,10 +92,30 @@ class test_ci:
 
     def test_bca_multi_multialpha(self):
         np.random.seed(1234567890)
-        results1 = boot.ci((self.x,self.y), lambda a,b: stats.linregress(a,b)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=500)
+        results1 = boot.ci((self.x,self.y), lambda a,b: stats.linregress(a,b)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
         np.random.seed(1234567890)
-        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=500)
+        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
         np.testing.assert_array_almost_equal(results1,results2)
+    
+    def test_bca_multi_2dout_multialpha(self):
+        np.random.seed(1234567890)
+        results1 = boot.ci((self.x,self.y), stats.linregress, alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
+        np.random.seed(1234567890)
+        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[0], alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
+        np.random.seed(1234567890)
+        results3 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
+        np.testing.assert_array_almost_equal(results1[:,0],results2)
+        np.testing.assert_array_almost_equal(results1[:,1],results3)
+
+    def test_pi_multi_2dout_multialpha(self):
+        np.random.seed(1234567890)
+        results1 = boot.ci((self.x,self.y), stats.linregress, alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
+        np.random.seed(1234567890)
+        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[0], alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
+        np.random.seed(1234567890)
+        results3 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
+        np.testing.assert_array_almost_equal(results1[:,0],results2)
+        np.testing.assert_array_almost_equal(results1[:,1],results3)
     
     def test_bca_n_samples(self):
         np.random.seed(1234567890)

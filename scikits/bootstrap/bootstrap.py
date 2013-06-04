@@ -64,22 +64,31 @@ Calculation Methods
 -------------------
 'pi': Percentile Interval (Efron 13.3)
     The percentile interval method simply returns the 100*alphath bootstrap
-    sample's values for the statistic.
-
-    This is an extremely simple method of confidence interval calculation.
-    However, it has several disadvantages compared to the bias-corrected
-    accelerated method, which is the default.
+    sample's values for the statistic. This is an extremely simple method of 
+    confidence interval calculation. However, it has several disadvantages 
+    compared to the bias-corrected accelerated method, which is the default.
 'bca': Bias-Corrected Accelerated Non-Parametric (Efron 14.3) (default)
     This method is much more complex to explain. However, it gives considerably
     better results, and is generally recommended for normal situations. Note
     that in cases where the statistic is smooth, and can be expressed with
     weights, the ABC method will give approximated results much, much faster.
-'abc': Approximate Bootstrap Confidence (Efron FIXME)
+'abc': Approximate Bootstrap Confidence (Efron 14.4, 22.6)
     This method provides approximated bootstrap confidence intervals without
     actually taking bootstrap samples. This requires that the statistic be 
     smooth, and allow for weighting of individual points with a weights=
     parameter (note that np.average allows this). This is _much_ faster
     than all other methods for situations where it can be used.
+
+Examples
+--------
+To calculate the confidence intervals for the mean of some numbers:
+
+>> boot.ci( np.randn(100), np.average )
+
+Given some data points in arrays x and y calculate the confidence intervals
+for all linear regression coefficients simultaneously:
+
+>> boot.ci( (x,y), scipy.stats.linregress )
 
 References
 ----------
@@ -155,7 +164,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # to those indexes.
     bootindexes = bootstrap_indexes( tdata[0], n_samples )
     stat = np.array([statfunction(*(x[indexes] for x in tdata)) for indexes in bootindexes])
-    stat.sort()
+    stat.sort(axis=0)
 
     # Percentile Interval Method
     if method == 'pi':
@@ -178,10 +187,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         # Acceleration value
         a = np.sum( (jmean - jstat)**3, axis=0 ) / ( 6.0 * np.sum( (jmean - jstat)**2, axis=0)**1.5 )
 
-        zs = z0 + norm.ppf(alphas)
+        zs = z0 + norm.ppf(alphas).reshape(alphas.shape+(1,)*z0.ndim)
 
         avals = norm.cdf(z0 + zs/(1-a*zs))
-    
+
     else:
         raise ValueError("Method {0} is not supported.".format(method))
 
@@ -193,9 +202,19 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         warnings.warn("Some values used top 10 low/high samples; results may be unstable.", InstabilityWarning)
 
     if output == 'lowhigh':
-        return stat[np.round((n_samples-1)*avals).astype('int')]
+        if nvals.ndim == 1:
+            # All nvals are the same. Simple broadcasting
+            return stat[nvals]
+        else:
+            # Nvals are different for each data point. Not simple broadcasting.
+            # Each set of nvals along axis 0 corresponds to the data at the same
+            # point in other axes.
+            return stat[(nvals, np.indices(nvals.shape)[1:].squeeze())]
     elif output == 'errorbar':
-        return abs(statfunction(data)-stat[np.round((n_samples-1)*avals).astype('int')])[np.newaxis].T
+        if nvals.ndim == 1:
+          return abs(statfunction(data)-stat[nvals])[np.newaxis].T
+        else:
+          return abs(statfunction(data)-stat[(nvals, np.indices(nvals.shape)[1:])])[np.newaxis].T
     else:
         raise ValueError("Output option {0} is not supported.".format(output))
     

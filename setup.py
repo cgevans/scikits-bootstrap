@@ -17,7 +17,7 @@ MAINTAINER_EMAIL    = 'cevans@evanslabs.org',
 URL                 = 'http://github.org/cgevans/scikits-bootstrap'
 LICENSE             = 'Modified BSD'
 DOWNLOAD_URL        = URL
-VERSION             = '0.2dev'
+VERSION             = '0.3'
 
 import setuptools
 from numpy.distutils.core import setup

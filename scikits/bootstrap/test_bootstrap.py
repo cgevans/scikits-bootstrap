@@ -53,6 +53,10 @@ class test_ci:
         results = boot.ci_abc(self.data,lambda x,y: np.average(x,weights=y),alpha=(0.1,0.2,0.8,0.9))
         np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
 
+    def test_abc_multialpha_unified(self):
+        results = boot.ci(self.data,lambda x,weights: np.average(x,weights=weights),alpha=(0.1,0.2,0.8,0.9),method='abc')
+        np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
+    
     def test_abc_multialpha_defaultstat(self):
         results = boot.ci_abc(self.data,alpha=(0.1,0.2,0.8,0.9))
         np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))

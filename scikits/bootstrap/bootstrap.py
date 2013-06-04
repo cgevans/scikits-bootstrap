@@ -116,7 +116,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         p0 = np.repeat(1.0/n,nn)
 
         t1 = np.zeros(nn); t2 = np.zeros(nn)
-        t0 = statfunction(*tdata,weights=p0)
+        try:
+          t0 = statfunction(*tdata,weights=p0)
+        except TypeError, e:
+          raise TypeError("statfunction does not accept correct arguments for ABC ({0})".format(e.message))
 
         # There MUST be a better way to do this!
         for i in range(0,nn):
@@ -138,7 +141,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         # stan = t0 + sighat * norm.ppf(alphas)
         abc = np.zeros_like(alphas)
         for i in range(0,len(alphas)):
-            abc[i] = statfunction(tdata,weights=p0+za[i]*delta)
+            abc[i] = statfunction(*tdata,weights=p0+za[i]*delta)
 
         if output == 'lowhigh':
             return abc
@@ -169,7 +172,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
         # Statistics of the jackknife distribution
         jackindexes = jackknife_indexes(tdata[0])
-        jstat = [statfunction(*(x[indexes] for x in tdata)) for index in jackindexes]
+        jstat = [statfunction(*(x[indexes] for x in tdata)) for indexes in jackindexes]
         jmean = np.mean(jstat,axis=0)
 
         # Acceleration value

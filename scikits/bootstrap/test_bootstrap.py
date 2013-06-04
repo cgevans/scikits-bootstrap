@@ -1,6 +1,7 @@
 import scikits.bootstrap as boot
 import numpy as np
 from numpy.testing.decorators import skipif
+import scipy.stats as stats
 
 try:
     import pandas
@@ -15,6 +16,8 @@ class test_ci:
                             2.17032495,  1.59645265, -0.76945156,  0.56605824, -0.11927018,
                            -0.1465108 , -0.79890338,  0.77183278, -0.82819136,  1.32667483,
                             1.05986776,  2.14408873, -1.43464512,  2.28743654,  0.42864858])
+        self.x = [1,2,3,4,5,6]
+        self.y = [2,1,2,5,1,2]
         if not no_pandas:
             self.pds = pandas.Series(self.data,index=np.arange(50,70))
 
@@ -83,6 +86,13 @@ class test_ci:
         results = boot.ci(self.data,np.average,alpha=(0.1,0.2,0.8,0.9))
         np.testing.assert_array_almost_equal(results,np.array([ 0.39210727,  0.50775386,  0.93673299,  1.0476729 ]))
 
+    def test_bca_multi_multialpha(self):
+        np.random.seed(1234567890)
+        results1 = boot.ci((self.x,self.y), lambda a,b: stats.linregress(a,b)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=500)
+        np.random.seed(1234567890)
+        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=500)
+        np.testing.assert_array_almost_equal(results1,results2)
+    
     def test_bca_n_samples(self):
         np.random.seed(1234567890)
         results = boot.ci(self.data,np.average,alpha=(0.1,0.2,0.8,0.9),n_samples=500)

@@ -10,7 +10,7 @@ except ImportError:
 else:
     no_pandas = False
 
-class test_ci:
+class test_ci():
     def setup(self):
         self.data = np.array([ 1.34016346,  1.73759123,  1.49898834, -0.22864333,  2.031034  ,
                             2.17032495,  1.59645265, -0.76945156,  0.56605824, -0.11927018,

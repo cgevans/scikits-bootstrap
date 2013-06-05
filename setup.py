@@ -1,62 +1,39 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+import multiprocessing
+from setuptools import setup, find_packages
+setup(
+    name = "scikits.bootstrap",
+    version = "0.3.1",
+    packages = find_packages(),
 
-descr   = """Bootstrap Scikit
+    # Project uses reStructuredText, so ensure that the docutils get
+    # installed or upgraded on the target machine
+    install_requires = ['numpy','scipy'],
+    namespace_packages = ['scikits'],
 
-Algorithms for SciPy to calculate bootstrap confidence intervals for statistics functions
-applied to data.
-"""
+    package_data = {
+        # If any package contains *.txt or *.rst files, include them:
+        '': ['*.md', '*.rst'],
+    },
 
-import os
-import sys
-
-DISTNAME            = 'scikits.bootstrap'
-DESCRIPTION         = 'Bootstrap confidence interval estimation routines for SciPy'
-LONG_DESCRIPTION    = descr
-MAINTAINER          = 'Constantine Evans',
-MAINTAINER_EMAIL    = 'cevans@evanslabs.org',
-URL                 = 'http://github.org/cgevans/scikits-bootstrap'
-LICENSE             = 'Modified BSD'
-DOWNLOAD_URL        = URL
-VERSION             = '0.3'
-
-import setuptools
-from numpy.distutils.core import setup
-
-def configuration(parent_package='', top_path=None, package_name=DISTNAME):
-    if os.path.exists('MANIFEST'): os.remove('MANIFEST')
-
-    from numpy.distutils.misc_util import Configuration
-    config = Configuration(package_name, parent_package, top_path,
-                           version = VERSION,
-                           maintainer  = MAINTAINER,
-                           maintainer_email = MAINTAINER_EMAIL,
-                           description = DESCRIPTION,
-                           license = LICENSE,
-                           url = URL,
-                           download_url = DOWNLOAD_URL,
-                           long_description = LONG_DESCRIPTION)
-
-    return config
-
-if __name__ == "__main__":
-    setup(configuration = configuration,
-        install_requires = ['numpy','scipy'],
-        namespace_packages = ['scikits'],
-        packages = setuptools.find_packages(),
-        include_package_data = True,
-        zip_safe = True,
-        classifiers =
-            [ 'Development Status :: 4 - Beta',
-              'Environment :: Console',
-              'Intended Audience :: Developers',
-              'Intended Audience :: Science/Research',
-              'License :: OSI Approved :: BSD License',
-              'Programming Language :: C',
-              'Programming Language :: Python',
-              'Programming Language :: Python :: 3',
-              'Topic :: Scientific/Engineering',
-              'Operating System :: Microsoft :: Windows',
-              'Operating System :: POSIX',
-              'Operating System :: Unix',
-              'Operating System :: MacOS',
-              ])
+    # metadata for upload to PyPI
+    author = "Constantine Evans",
+    author_email = "cevans@evanslabs.org",
+    description = "Bootstrap confidence interval estimation routines for SciPy",
+    license = "Modified BSD",
+    #keywords = "",
+    url = "http://github.org/cgevans/scikits-bootstrap",   # project home page, if any
+    classifiers =
+        [ 'Development Status :: 4 - Beta',
+          'Environment :: Console',
+          'Intended Audience :: Developers',
+          'Intended Audience :: Science/Research',
+          'License :: OSI Approved :: BSD License',
+          'Programming Language :: C',
+          'Programming Language :: Python',
+          'Topic :: Scientific/Engineering',
+          'Operating System :: OS Independent',
+          ],
+    test_suite = "nose.collector"
+    # could also include long_description, download_url, classifiers, etc.
+)

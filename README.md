@@ -3,6 +3,9 @@ scikits-bootstrap
 
 Scikits.bootstrap provides bootstrap confidence interval algorithms for scipy.
 
+It also provides an algorithm which estimates the probability that the statistics
+lies satisfies some criteria, e.g. lies in some interval.
+
 At present, it is rather feature-incomplete and in flux. However, the functions
 that have been written should be relatively stable as far as results.
 
@@ -20,3 +23,4 @@ should actually look; please let me know if you think the package should be
 organized differently.
 
 The package is licensed under the Modified BSD License.
+

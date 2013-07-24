@@ -1,4 +1,5 @@
-import scikits.bootstrap as boot
+# import scikits.bootstrap as boot
+import bootstrap as boot
 import numpy as np
 from numpy.testing.decorators import skipif
 import scipy.stats as stats
@@ -143,6 +144,29 @@ class test_ci():
         np.random.seed(1234567890)
         results = boot.ci(self.pds,np.average,method='pi')
         np.testing.assert_array_almost_equal(results,np.array([ 0.2288689 ,  1.21259752]))
+
+class test_pval():
+    def setup(self):
+        pass
+
+    def test_pval(self):
+        np.random.seed(1234567890)
+
+        mu = 1
+        s2 = 2
+        N = 10000
+        NS = 10000
+
+        data = np.random.normal(mu, s2, N)
+
+        # print "Dist Normal(%.1f, %.1f)" % (mu,s2)
+        # print "Analytic CI: ", [np.average(data) - 1.96 * np.sqrt(np.var(data)) / np.sqrt(N), np.average(data) + 1.96 * np.sqrt(np.var(data)) / np.sqrt(N) ]
+        # print "Bootstrap CI:", list(bs.ci(data, np.average, n_samples = NS))
+
+        # print "P(np.average is in 95% CI):", bs.pval(data, np.average, lambda s: 0.98544817 <= s <= 1.06404872, n_samples=NS)
+
+        result = boot.pval(data, np.average, lambda s: 0.98544817 <= s <= 1.06404872, n_samples=NS)
+        np.testing.assert_almost_equal(result, 0.95079, 3)
 
 if __name__ == "__main__":
     np.testing.run_module_suite()

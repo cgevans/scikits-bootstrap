@@ -307,7 +307,7 @@ def bootstrap_indexes(data, n_samples=10000):
 Given data points data, where axis 0 is considered to delineate points, return
 a list of arrays where each array is a set of bootstrap indexes.
     """
-    return ( randint(data.shape[0],size=data.shape[0] ) for a in xrange(0,n_samples) )
+    return ( randint(data.shape[0],size=data.shape[0] ) for a in range(0,n_samples) )
 
 def jackknife_indexes(data):
     """

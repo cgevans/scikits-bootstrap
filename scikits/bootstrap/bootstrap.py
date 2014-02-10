@@ -127,7 +127,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         t1 = np.zeros(nn); t2 = np.zeros(nn)
         try:
           t0 = statfunction(*tdata,weights=p0)
-        except TypeError, e:
+        except TypeError as e:
           raise TypeError("statfunction does not accept correct arguments for ABC ({0})".format(e.message))
 
         # There MUST be a better way to do this!

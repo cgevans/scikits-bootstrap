@@ -127,7 +127,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         t1 = np.zeros(nn); t2 = np.zeros(nn)
         try:
           t0 = statfunction(*tdata,weights=p0)
-        except TypeError, e:
+        except TypeError as e:
           raise TypeError("statfunction does not accept correct arguments for ABC ({0})".format(e.message))
 
         # There MUST be a better way to do this!
@@ -305,9 +305,10 @@ bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
 def bootstrap_indexes(data, n_samples=10000):
     """
 Given data points data, where axis 0 is considered to delineate points, return
-a list of arrays where each array is a set of bootstrap indexes.
+an array where each row is a set of bootstrap indexes. This can be used as a list
+of bootstrap indexes as well.
     """
-    return ( randint(data.shape[0],size=data.shape[0] ) for a in xrange(0,n_samples) )
+    return randint(data.shape[0],size=(n_samples,data.shape[0]) )
 
 def jackknife_indexes(data):
     """

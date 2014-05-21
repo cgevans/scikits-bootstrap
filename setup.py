@@ -31,6 +31,7 @@ setup(
           'License :: OSI Approved :: BSD License',
           'Programming Language :: C',
           'Programming Language :: Python',
+          'Programming Language :: Python :: 3',
           'Topic :: Scientific/Engineering',
           'Operating System :: OS Independent',
           ],

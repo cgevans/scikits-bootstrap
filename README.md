@@ -20,3 +20,13 @@ should actually look; please let me know if you think the package should be
 organized differently.
 
 The package is licensed under the Modified BSD License.
+
+Version Info
+============
+
+v0.3.2: This version contains various fixes to allow compatibility with Python
+        3.3. While I have not used the package extensively with Python 3, all
+        tests now pass, and importing works properly. The compatibility changes
+        slightly modify the output of bootstrap_indexes, from a Python list to
+        a Numpy array that can be iterated over in the same manner. This should
+        only be important in extremely unusual situations.

@@ -189,7 +189,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         
         # Raise an exception if the acceleration value is not finite. This will happen if, for example,
         # every jackknife sample results in the same statistic value.
-        if not np.isfinite(a):
+        if not np.all(np.isfinite(a)):
             raise ValueError("BCa acceleration value is not finite, and BCa cannot be used. This \
 will happen if, for example, all input rows are identical. Try using the \
 percentage interval method instead, though be aware that bootstrapping may \
@@ -230,7 +230,7 @@ not be the right option for your data.")
 
 
 
-def ci_abc(data, stat=lambda x,y: np.average(x,weights=y), alpha=0.05, epsilon = 0.001):
+def ci_abc(data, stat=lambda x,y: np.average(x,weights=y) , alpha=0.05, epsilon = 0.001):
     """
 .. note:: Deprecated. This functionality is now rolled into ci.
           
@@ -266,7 +266,8 @@ References
 Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
     """
-    return ci(data, statfunction=stat, alpha=alpha, epsilon=epsilon)
+    return ci(data, statfunction=lambda x,weights: stat(x,weights), alpha=alpha, epsilon=epsilon,
+            method='abc')
 
 def bootstrap_indexes(data, n_samples=10000):
     """

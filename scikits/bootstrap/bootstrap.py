@@ -266,49 +266,7 @@ References
 Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
     """
-    # Deal with the alpha values
-    if not np.iterable(alpha):
-        alpha = np.array([alpha/2,1-alpha/2])
-    else:
-        alpha = np.array(alpha)
-
-    # Ensure that the data is actually an array. This isn't nice to pandas,
-    # but pandas seems much much slower and the indexes become a problem.
-    data = np.array(data)
-
-    n = data.shape[0]*1.0
-    nn = data.shape[0]
-
-    I = np.identity(nn)
-    ep = epsilon / n*1.0
-    p0 = np.repeat(1.0/n,nn)
-
-    t1 = np.zeros(nn); t2 = np.zeros(nn)
-    t0 = stat(data,p0)
-
-    # There MUST be a better way to do this!
-    for i in range(0,nn):
-        di = I[i] - p0
-        tp = stat(data,p0+ep*di)
-        tm = stat(data,p0-ep*di)
-        t1[i] = (tp-tm)/(2*ep)
-        t2[i] = (tp-2*t0+tm)/ep**2
-
-    sighat = np.sqrt(np.sum(t1**2))/n
-    a = (np.sum(t1**3))/(6*n**3*sighat**3)
-    delta = t1/(n**2*sighat)
-    cq = (stat(data,p0+ep*delta)-2*t0+stat(data,p0-ep*delta))/(2*sighat*ep**2)
-    bhat = np.sum(t2)/(2*n**2)
-    curv = bhat/sighat-cq
-    z0 = norm.ppf(2*norm.cdf(a)*norm.cdf(-curv))
-    Z = z0+norm.ppf(alpha)
-    za = Z/(1-a*Z)**2
-    # stan = t0 + sighat * norm.ppf(alpha)
-    abc = np.zeros_like(alpha)
-    for i in range(0,len(alpha)):
-        abc[i] = stat(data,p0+za[i]*delta)
-
-    return abc
+    return ci(data, statfunction=stat, alpha=alpha, epsilon=epsilon)
 
 def bootstrap_indexes(data, n_samples=10000):
     """

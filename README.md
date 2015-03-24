@@ -19,7 +19,8 @@ be adding tests as well. I'm especially interested, however, in how the API
 should actually look; please let me know if you think the package should be
 organized differently.
 
-The package is licensed under the Modified BSD License.
+The package is licensed under the Modified BSD License. It is supported in part
+by the Evans Institute.
 
 Version Info
 ============

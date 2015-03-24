@@ -186,6 +186,14 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
         # Acceleration value
         a = np.sum( (jmean - jstat)**3, axis=0 ) / ( 6.0 * np.sum( (jmean - jstat)**2, axis=0)**1.5 )
+        
+        # Raise an exception if the acceleration value is not finite. This will happen if, for example,
+        # every jackknife sample results in the same statistic value.
+        if not np.isfinite(a):
+            raise ValueError("BCa acceleration value is not finite, and BCa cannot be used. This \
+will happen if, for example, all input rows are identical. Try using the \
+percentage interval method instead, though be aware that bootstrapping may \
+not be the right option for your data.") 
 
         zs = z0 + norm.ppf(alphas).reshape(alphas.shape+(1,)*z0.ndim)
 

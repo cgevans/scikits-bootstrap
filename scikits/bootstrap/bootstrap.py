@@ -3,6 +3,13 @@ from scipy.stats import norm
 import numpy as np
 import warnings
 
+# Keep python 2/3 compatibility, without using six. At some point,
+# we may need to add six as a requirement, but right now we can avoid it.
+try:
+    xrange
+except NameError:
+    xrange = range
+
 class InstabilityWarning(UserWarning):
     """Issued when results may be unstable."""
     pass
@@ -272,8 +279,8 @@ bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
 def bootstrap_indexes(data, n_samples=10000):
     """
 Given data points data, where axis 0 is considered to delineate points, return
-an array where each row is a set of bootstrap indexes. This can be used as a list
-of bootstrap indexes as well.
+an generator for sets of bootstrap indexes. This can be used as a list
+of bootstrap indexes (with list(bootstrap_indexes(data))) as well.
     """
     for _ in xrange(n_samples):
         yield randint(data.shape[0], size=(data.shape[0],))

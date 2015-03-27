@@ -275,7 +275,8 @@ Given data points data, where axis 0 is considered to delineate points, return
 an array where each row is a set of bootstrap indexes. This can be used as a list
 of bootstrap indexes as well.
     """
-    return randint(data.shape[0],size=(n_samples,data.shape[0]) )
+    for _ in xrange(n_samples):
+        yield randint(data.shape[0], size=(data.shape[0],))
 
 def jackknife_indexes(data):
     """

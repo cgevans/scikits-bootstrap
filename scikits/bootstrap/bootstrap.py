@@ -337,3 +337,44 @@ samples)
     for sample in base: np.random.shuffle(sample)
     return base[:,0:size]
 
+
+def it_moving_blocks(n_obs, block_length, truncate=True):
+    '''Generator for moving block boottrap
+
+    Notes
+    -----
+    This uses wrapping from the end to the beginning of the data series.
+
+    If truncate is True, then the returned index is valid for the original
+    data series.
+
+    If truncate is False, then the returned index array has a largest possible
+    index equal to ``n_obs + block_length - 2``. It needs to index into an
+    array that has the first ``block_length - 1`` observations concatenated
+    to the end.
+
+    #TODO: reverse indexing so we have negative indices for automatic wrapping
+
+    '''
+    n_blocks = int(np.ceil(n_obs * 1. / block_length))
+    idx0 = np.cumsum(np.ones((n_blocks, block_length), int), 1) - 1
+
+    while True:
+        # wrap with negative
+        #start = np.random.randint(0, n_obs, size=n_blocks)
+        start = np.random.randint(0, n_obs, size=n_blocks) - block_length + 1
+
+        # moving blocks, with overlap
+        idx = (idx0 + start[:,None]).ravel()
+        if truncate:
+            # reindex wrapped observations
+            mask = idx >= n_obs
+            idx[mask] -= n_obs
+        yield idx[:n_obs]
+
+
+def bootstrap_indexes_mblocks(data, n_samples=10000, block_lenght=3, truncate=True):
+    n_obs = data.shape[0]
+    idx = np.arange(n_obs)
+    iter_obj = it_moving_blocks(n_obs, block_lenght, truncate)
+    return np.array([idx[iter_obj.next()] for _ in range(n_samples)])

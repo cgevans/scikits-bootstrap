@@ -376,10 +376,9 @@ def it_moving_blocks(n_obs, block_length, truncate=True):
 def bootstrap_indexes_mblocks(data, n_samples=10000, block_lenght=3, truncate=True):
     """Generate moving-block bootstrap samples.
 
-    Given data points data, where axis 0 is considered to delineate points,
-    return an generator for sets of bootstrap indexes. This can be used as a
-    list of bootstrap indexes (with list(bootstrap_indexes_mblocks(data))) as
-    well.
+    Given data points `data`, where axis 0 is considered to delineate points,
+    return a generator for sets of bootstrap indexes. This can be used as a
+    list of bootstrap indexes (with list(bootstrap_indexes_mblocks(data))) as well.
     """
     n_obs = data.shape[0]
     idx = np.arange(n_obs)

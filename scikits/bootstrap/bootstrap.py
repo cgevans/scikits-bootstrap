@@ -74,11 +74,17 @@ Calculation Methods
     sample's values for the statistic. This is an extremely simple method of 
     confidence interval calculation. However, it has several disadvantages 
     compared to the bias-corrected accelerated method, which is the default.
-'bca': Bias-Corrected Accelerated Non-Parametric (Efron 14.3) (default)
+'bca': Bias-Corrected Accelerated (BCa) Non-Parametric (Efron 14.3) (default)
     This method is much more complex to explain. However, it gives considerably
     better results, and is generally recommended for normal situations. Note
     that in cases where the statistic is smooth, and can be expressed with
     weights, the ABC method will give approximated results much, much faster.
+    Note that in a case where the statfunction results in equal output for every
+    bootstrap sample, the BCa confidence interval is technically undefined, as
+    the acceleration value is undefined. To match the percentile interval method
+    and give reasonable output, the implementation of this method returns a
+    confidence interval of zero width using the 0th bootstrap sample in this
+    case, and warns the user.  
 'abc': Approximate Bootstrap Confidence (Efron 14.4, 22.6)
     This method provides approximated bootstrap confidence intervals without
     actually taking bootstrap samples. This requires that the statistic be 
@@ -193,15 +199,12 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
         # Acceleration value
         a = np.sum( (jmean - jstat)**3, axis=0 ) / ( 6.0 * np.sum( (jmean - jstat)**2, axis=0)**1.5 )
+        if np.any(np.isnan(a)):
+            nanind = np.nonzero(np.isnan(a))
+            warnings.warn("Some acceleration values were undefined. This is almost certainly because all \
+values for the statistic were equal. Affected confidence intervals will have zero width and \
+may be inaccurate (indexes: {}). Other warnings are likely related.".format(nanind), InstabilityWarning)
         
-        # Raise an exception if the acceleration value is not finite. This will happen if, for example,
-        # every jackknife sample results in the same statistic value.
-        if not np.all(np.isfinite(a)):
-            raise ValueError("BCa acceleration value is not finite, and BCa cannot be used. This \
-will happen if, for example, all input rows are identical. Try using the \
-percentage interval method instead, though be aware that bootstrapping may \
-not be the right option for your data.") 
-
         zs = z0 + norm.ppf(alphas).reshape(alphas.shape+(1,)*z0.ndim)
 
         avals = norm.cdf(z0 + zs/(1-a*zs))
@@ -209,12 +212,14 @@ not be the right option for your data.")
     else:
         raise ValueError("Method {0} is not supported.".format(method))
 
-    nvals = np.round((n_samples-1)*avals).astype('int')
-
+    nvals = np.round((n_samples-1)*avals)
+    
     if np.any(nvals==0) or np.any(nvals==n_samples-1):
         warnings.warn("Some values used extremal samples; results are probably unstable.", InstabilityWarning)
     elif np.any(nvals<10) or np.any(nvals>=n_samples-10):
         warnings.warn("Some values used top 10 low/high samples; results may be unstable.", InstabilityWarning)
+
+    nvals = np.nan_to_num(nvals).astype('int')
 
     if output == 'lowhigh':
         if nvals.ndim == 1:

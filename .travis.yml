@@ -7,7 +7,7 @@ matrix:
     - python: "2.7"
       env: DEPS="numpy scipy"
     - python: "3.4"
-      env: DEPS="numpy= scipy"
+      env: DEPS="numpy scipy"
     - python: "3.5"
       env: DEPS="numpy scipy"
 

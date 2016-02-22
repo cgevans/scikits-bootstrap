@@ -1,3 +1,5 @@
+[![Travis](https://travis-ci.org/cgevans/scikits-bootstrap.svg?branch=master)](https://travis-ci.org/cgevans/scikits-bootstrap)
+
 scikits-bootstrap
 =================
 

@@ -22,7 +22,7 @@ setup(
     description = "Bootstrap confidence interval estimation routines for SciPy",
     license = "Modified BSD",
     #keywords = "",
-    url = "http://github.org/cgevans/scikits-bootstrap",   # project home page, if any
+    url = "http://github.com/cgevans/scikits-bootstrap",   # project home page, if any
     classifiers =
         [ 'Development Status :: 4 - Beta',
           'Environment :: Console',

@@ -22,10 +22,15 @@ should actually look; please let me know if you think the package should be
 organized differently.
 
 The package is licensed under the Modified BSD License. It is supported in part
-by the Evans Institute.
+by the Evans Foundation.
 
 Version Info
 ============
+
+v0.3.3: Bug fixes.  Warnings have been cleaned up, and are implemented for BCa
+        when all statistic values are equal (a common confusion in prior versions).
+		Related numpy warnings are now suppressed.  Some tests on Python 2 were
+		fixed, and the PyPI website link is now correct.
 
 v0.3.2: This version contains various fixes to allow compatibility with Python
         3.3. While I have not used the package extensively with Python 3, all

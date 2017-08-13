@@ -3,6 +3,8 @@ from scipy.stats import norm
 import numpy as np
 import warnings
 
+__version__ = '0.3.3'
+
 # Keep python 2/3 compatibility, without using six. At some point,
 # we may need to add six as a requirement, but right now we can avoid it.
 try:
@@ -10,12 +12,13 @@ try:
 except NameError:
     xrange = range
 
+
 class InstabilityWarning(UserWarning):
     """Issued when results may be unstable."""
     pass
 
 # On import, make sure that InstabilityWarnings are not filtered out.
-warnings.simplefilter('always',InstabilityWarning)
+warnings.simplefilter('always', InstabilityWarning)
 
 def ci(data, statfunction=np.average, alpha=0.05, n_samples=10000, method='bca', output='lowhigh', epsilon=0.001, multi=None):
     """
@@ -197,28 +200,41 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         jstat = [statfunction(*(x[indexes] for x in tdata)) for indexes in jackindexes]
         jmean = np.mean(jstat,axis=0)
 
+        # Temporarily kill numpy warnings:
+        oldnperr = np.seterr(invalid='ignore')
         # Acceleration value
-        a = np.sum( (jmean - jstat)**3, axis=0 ) / ( 6.0 * np.sum( (jmean - jstat)**2, axis=0)**1.5 )
+        a = np.sum((jmean - jstat)**3, axis=0) / (
+            6.0 * np.sum((jmean - jstat)**2, axis=0)**1.5)
         if np.any(np.isnan(a)):
             nanind = np.nonzero(np.isnan(a))
-            warnings.warn("Some acceleration values were undefined. This is almost certainly because all \
-values for the statistic were equal. Affected confidence intervals will have zero width and \
-may be inaccurate (indexes: {}). Other warnings are likely related.".format(nanind), InstabilityWarning)
+            warnings.warn("BCa acceleration values for indexes {} were undefined. \
+Statistic values were likely all equal. Affected CI will \
+be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
         
         zs = z0 + norm.ppf(alphas).reshape(alphas.shape+(1,)*z0.ndim)
 
         avals = norm.cdf(z0 + zs/(1-a*zs))
-
+        np.seterr(**oldnperr)
     else:
         raise ValueError("Method {0} is not supported.".format(method))
 
     nvals = np.round((n_samples-1)*avals)
     
-    if np.any(nvals==0) or np.any(nvals==n_samples-1):
-        warnings.warn("Some values used extremal samples; results are probably unstable.", InstabilityWarning)
-    elif np.any(nvals<10) or np.any(nvals>=n_samples-10):
-        warnings.warn("Some values used top 10 low/high samples; results may be unstable.", InstabilityWarning)
-
+    oldnperr = np.seterr(invalid='ignore')
+    if np.any(np.isnan(nvals)):
+        warnings.warn("Some values were NaN; results are probably unstable " +
+                      "(all values were probably equal)", InstabilityWarning,
+                      stacklevel=2)
+    if np.any(nvals == 0) or np.any(nvals == n_samples-1):
+        warnings.warn("Some values used extremal samples; " +
+                      "results are probably unstable.",
+                      InstabilityWarning, stacklevel=2)
+    elif np.any(nvals < 10) or np.any(nvals >= n_samples-10):
+        warnings.warn("Some values used top 10 low/high samples; " +
+                      "results may be unstable.",
+                      InstabilityWarning, stacklevel=2)
+    np.seterr(**oldnperr)
+    
     nvals = np.nan_to_num(nvals).astype('int')
 
     if output == 'lowhigh':
@@ -313,7 +329,7 @@ samples)
     if size == -1:
         size = len(data)
     elif (size < 1) and (size > 0):
-        size = round(size*len(data))
+        size = int(round(size*len(data)))
     elif size > 1:
         pass
     else:

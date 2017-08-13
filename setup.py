@@ -1,14 +1,12 @@
 #!/usr/bin/env python
-import multiprocessing
+
 from setuptools import setup, find_packages
 setup(
     name = "scikits.bootstrap",
-    version = "0.3.2",
+    version = "0.3.3",
     packages = find_packages(),
 
-    # Project uses reStructuredText, so ensure that the docutils get
-    # installed or upgraded on the target machine
-    install_requires = ['numpy','scipy'],
+     install_requires = ['numpy','scipy'],
     namespace_packages = ['scikits'],
 
     package_data = {
@@ -22,7 +20,7 @@ setup(
     description = "Bootstrap confidence interval estimation routines for SciPy",
     license = "Modified BSD",
     #keywords = "",
-    url = "http://github.org/cgevans/scikits-bootstrap",   # project home page, if any
+    url = "http://github.com/cgevans/scikits-bootstrap",   # project home page, if any
     classifiers =
         [ 'Development Status :: 4 - Beta',
           'Environment :: Console',

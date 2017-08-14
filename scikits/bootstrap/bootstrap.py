@@ -3,7 +3,7 @@ from scipy.stats import norm
 import numpy as np
 import warnings
 
-__version__ = '0.3.3'
+__version__ = '0.3.3dev1'
 
 # Keep python 2/3 compatibility, without using six. At some point,
 # we may need to add six as a requirement, but right now we can avoid it.
@@ -140,19 +140,18 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         ep = epsilon / n*1.0
         p0 = np.repeat(1.0/n,nn)
 
-        t1 = np.zeros(nn); t2 = np.zeros(nn)
         try:
           t0 = statfunction(*tdata,weights=p0)
         except TypeError as e:
           raise TypeError("statfunction does not accept correct arguments for ABC ({0})".format(e.message))
 
-        # There MUST be a better way to do this!
-        for i in range(0,nn):
-            di = I[i] - p0
-            tp = statfunction(*tdata,weights=p0+ep*di)
-            tm = statfunction(*tdata,weights=p0-ep*di)
-            t1[i] = (tp-tm)/(2*ep)
-            t2[i] = (tp-2*t0+tm)/ep**2
+        di_full = I - p0
+        tp = np.fromiter((statfunction(*tdata, weights=p0+ep*di)
+                          for di in di_full), dtype=np.float)
+        tm = np.fromiter((statfunction(*tdata, weights=p0-ep*di)
+                          for di in di_full), dtype=np.float)
+        t1 = (tp-tm)/(2*ep)
+        t2 = (tp-2*t0+tm)/ep**2
 
         sighat = np.sqrt(np.sum(t1**2))/n
         a = (np.sum(t1**3))/(6*n**3*sighat**3)

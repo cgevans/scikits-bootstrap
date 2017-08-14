@@ -21,7 +21,7 @@ except ImportError:
 
 import warnings
 
-__version__ = '0.3.3dev1'
+__version__ = '1.0.0.dev1'
 
 # Keep python 2/3 compatibility, without using six. At some point,
 # we may need to add six as a requirement, but right now we can avoid it.
@@ -291,46 +291,6 @@ be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
     
     
 
-
-
-def ci_abc(data, stat=lambda x,y: np.average(x,weights=y) , alpha=0.05, epsilon = 0.001):
-    """
-.. note:: Deprecated. This functionality is now rolled into ci.
-          
-Given a set of data ``data``, and a statistics function ``statfunction`` that
-applies to that data, computes the non-parametric approximate bootstrap
-confidence (ABC) interval for ``stat`` on that data. Data points are assumed
-to be delineated by axis 0.
-
-Parameters
-----------
-data: array_like, shape (N, ...)
-    Input data. Data points are assumed to be delineated by axis 0. Beyond this,
-    the shape doesn't matter, so long as ``statfunction`` can be applied to the
-    array.
-stat: function (data, weights) -> value
-    The _weighted_ statistic function. This must accept weights, unlike for other
-    methods.
-alpha: float or iterable, optional
-    The percentiles to use for the confidence interval (default=0.05). If this
-    is a float, the returned values are (alpha/2, 1-alpha/2) percentile confidence
-    intervals. If it is an iterable, alpha is assumed to be an iterable of
-    each desired percentile.
-epsilon: float
-    The step size for finite difference calculations. (default=0.001)
-
-Returns
--------
-confidences: tuple of floats
-    The confidence percentiles specified by alpha
-
-References
-----------
-Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
-bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
-    """
-    return ci(data, statfunction=stat, alpha=alpha, epsilon=epsilon,
-              method='abc')
 
 def bootstrap_indexes(data, n_samples=10000):
     """

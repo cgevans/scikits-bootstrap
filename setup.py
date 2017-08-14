@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 setup(
     name = "scikits.bootstrap",
-    version = "0.3.3dev1",
+    version = "1.0.0.dev1",
     packages = find_packages(),
 
     install_requires = ['numpy', 'pyerf'],

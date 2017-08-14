@@ -4,9 +4,10 @@ import scikits.bootstrap as boot
 import numpy as np
 from numpy.testing.decorators import skipif
 try:
+    no_scipy = False
     import scipy.stats as stats
 except ImportError:
-    pass
+    no_scipy = True
 
 try:
     import pandas
@@ -56,19 +57,23 @@ class test_ci():
         np.testing.assert_(not np.all(indexes[0]==indexes[1:]))
 
     def test_abc_simple(self):
-        results = boot.ci_abc(self.data,lambda x,y: np.average(x,weights=y))
-        np.testing.assert_array_almost_equal(results,np.array([ 0.20982275,  1.20374686]))
+        results = boot.ci(self.data,
+                          lambda x, weights: np.average(x, weights=weights),
+                          method='abc')
+        np.testing.assert_array_almost_equal(
+            results, np.array([0.20982275, 1.20374686]))
 
-    def test_abc_multialpha(self):
-        results = boot.ci_abc(self.data,lambda x,y: np.average(x,weights=y),alpha=(0.1,0.2,0.8,0.9))
-        np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
-
-    def test_abc_multialpha_unified(self):
-        results = boot.ci(self.data,lambda x,weights: np.average(x,weights=weights),alpha=(0.1,0.2,0.8,0.9),method='abc')
-        np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
+    def test_abc_multialpha_unified_noiter(self):
+        results = boot.ci(self.data,
+                          lambda x, weights:
+                          np.average(x, weights=weights, axis=-1),
+                          alpha=(0.1, 0.2, 0.8, 0.9), method='abc', _iter=False)
+        np.testing.assert_array_almost_equal(
+            results,
+            np.array([0.39472915, 0.51161304, 0.93789723, 1.04407254]))
     
     def test_abc_multialpha_defaultstat(self):
-        results = boot.ci_abc(self.data,alpha=(0.1,0.2,0.8,0.9))
+        results = boot.ci(self.data, alpha=(0.1,0.2,0.8,0.9), method='abc')
         np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
 
 # I can't actually figure out how to make this work right now...
@@ -86,27 +91,39 @@ class test_ci():
     def test_bca_simple(self):
         np.random.seed(1234567890)
         results = boot.ci(self.data)
-        np.testing.assert_array_almost_equal(results,np.array([ 0.20907826,  1.19877862]))
+        np.testing.assert_array_almost_equal(
+            results, np.array([0.20907826, 1.19877862]))
 
     def test_bca_errorbar_output_simple(self):
         np.random.seed(1234567890)
         results_default = boot.ci(self.data)
         np.random.seed(1234567890)
         results_errorbar = boot.ci(self.data, output='errorbar')
-        np.testing.assert_array_almost_equal(results_errorbar.T,abs(np.average(self.data)-results_default)[np.newaxis])
+        np.testing.assert_array_almost_equal(
+            results_errorbar.T,
+            abs(np.average(self.data) - results_default)[np.newaxis])
 
     def test_bca_multialpha(self):
         np.random.seed(1234567890)
-        results = boot.ci(self.data, alpha=(0.1,0.2,0.8,0.9))
-        np.testing.assert_array_almost_equal(results,np.array([ 0.39210727,  0.50775386,  0.93673299,  1.0476729 ]))
+        results = boot.ci(self.data, alpha=(0.1, 0.2, 0.8, 0.9))
+        np.testing.assert_array_almost_equal(results, np.array(
+            [0.39210727, 0.50775386, 0.93673299, 1.0476729]))
 
+    def test_bca_multialpha_noiter(self):
+        np.random.seed(1234567890)
+        results = boot.ci(self.data, alpha=(0.1, 0.2, 0.8, 0.9), _iter=False)
+        np.testing.assert_array_almost_equal(
+            results, np.array([0.39210727, 0.50775386, 0.93673299, 1.0476729]))
+        
+    @skipif(no_scipy)
     def test_bca_multi_multialpha(self):
         np.random.seed(1234567890)
         results1 = boot.ci((self.x,self.y), lambda a,b: stats.linregress(a,b)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
         np.random.seed(1234567890)
         results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
         np.testing.assert_array_almost_equal(results1,results2)
-    
+
+    @skipif(no_scipy)
     def test_bca_multi_2dout_multialpha(self):
         np.random.seed(1234567890)
         results1 = boot.ci((self.x,self.y), stats.linregress, alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
@@ -117,6 +134,7 @@ class test_ci():
         np.testing.assert_array_almost_equal(results1[:,0],results2)
         np.testing.assert_array_almost_equal(results1[:,1],results3)
 
+    @skipif(no_scipy)
     def test_pi_multi_2dout_multialpha(self):
         np.random.seed(1234567890)
         results1 = boot.ci((self.x,self.y), stats.linregress, alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
@@ -139,7 +157,7 @@ class test_ci():
 
     @skipif(no_pandas)
     def test_abc_pandas_series(self):
-        results = boot.ci_abc(self.pds,lambda x,y: np.average(x,weights=y))
+        results = boot.ci(self.pds, method='abc')
         np.testing.assert_array_almost_equal(results,np.array([ 0.20982275,  1.20374686]))
 
     @skipif(no_pandas)

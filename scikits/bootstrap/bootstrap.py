@@ -35,6 +35,7 @@ class InstabilityWarning(UserWarning):
     """Issued when results may be unstable."""
     pass
 
+
 # On import, make sure that InstabilityWarnings are not filtered out.
 warnings.simplefilter('always', InstabilityWarning)
 

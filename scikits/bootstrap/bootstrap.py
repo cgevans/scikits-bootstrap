@@ -1,9 +1,24 @@
 from __future__ import absolute_import, division, print_function
 
 from numpy.random import randint
-from scipy.stats import norm
-from math import ceil
+from math import ceil, sqrt
 import numpy as np
+try:
+    from scipy.stats import norm
+    nppf = norm.ppf
+    ncdf = norm.cdf
+except ImportError:
+    import pyerf
+    s2 = sqrt(2)
+    
+    def _ncdf_py(x):
+        return 0.5*(1+pyerf.erf(x/s2))
+    
+    def _nppf_py(x):
+        return s2 * pyerf.erfinv(2*x-1)
+    nppf = np.vectorize(_nppf_py, [np.float])
+    ncdf = np.vectorize(_ncdf_py, [np.float])
+
 import warnings
 
 __version__ = '0.3.3dev1'
@@ -23,7 +38,10 @@ class InstabilityWarning(UserWarning):
 # On import, make sure that InstabilityWarnings are not filtered out.
 warnings.simplefilter('always', InstabilityWarning)
 
-def ci(data, statfunction=np.average, alpha=0.05, n_samples=10000, method='bca', output='lowhigh', epsilon=0.001, multi=None):
+
+def ci(data, statfunction=None, alpha=0.05, n_samples=10000,
+       method='bca', output='lowhigh', epsilon=0.001, multi=None,
+       _iter=True):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -120,15 +138,23 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     else:
         alphas = np.array([alpha/2,1-alpha/2])
 
-    if multi == None:
+    if multi is None:
       if isinstance(data, tuple):
         multi = True
       else:
         multi = False
 
+    if statfunction is None:
+        if _iter:
+            statfunction = np.average
+        else:
+            def statfunc_wrapper(x, *args, **kwargs):
+                return np.average(x, axis=-1, *args, **kwargs)
+            statfunction = statfunc_wrapper
+        
     # Ensure that the data is actually an array. This isn't nice to pandas,
     # but pandas seems much much slower and the indexes become a problem.
-    if multi == False:
+    if not multi:
       data = np.array(data)
       tdata = (data,)
     else:
@@ -162,10 +188,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         cq = (statfunction(*tdata,weights=p0+ep*delta)-2*t0+statfunction(*tdata,weights=p0-ep*delta))/(2*sighat*ep**2)
         bhat = np.sum(t2)/(2*n**2)
         curv = bhat/sighat-cq
-        z0 = norm.ppf(2*norm.cdf(a)*norm.cdf(-curv))
-        Z = z0+norm.ppf(alphas)
+        z0 = nppf(2*ncdf(a)*ncdf(-curv))
+        Z = z0+nppf(alphas)
         za = Z/(1-a*Z)**2
-        # stan = t0 + sighat * norm.ppf(alphas)
+        # stan = t0 + sighat * nppf(alphas)
         abc = np.zeros_like(alphas)
         for i in range(0,len(alphas)):
             abc[i] = statfunction(*tdata,weights=p0+za[i]*delta)
@@ -180,8 +206,14 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # We don't need to generate actual samples; that would take more memory.
     # Instead, we can generate just the indexes, and then apply the statfun
     # to those indexes.
-    bootindexes = bootstrap_indexes( tdata[0], n_samples )
-    stat = np.array([statfunction(*(x[indexes] for x in tdata)) for indexes in bootindexes])
+    if _iter:
+        bootindexes = bootstrap_indexes(tdata[0], n_samples)
+        stat = np.array([statfunction(*(x[indexes] for x in tdata))
+                         for indexes in bootindexes])
+    else:
+        bootindexes = bootstrap_indexes_array(tdata[0], n_samples)
+        stat = statfunction(*(x[bootindexes] for x in tdata))
+
     stat.sort(axis=0)
 
     # Percentile Interval Method
@@ -195,7 +227,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         ostat = statfunction(*tdata)
 
         # The bias correction value.
-        z0 = norm.ppf( ( 1.0*np.sum(stat < ostat, axis=0)  ) / n_samples )
+        z0 = nppf( ( 1.0*np.sum(stat < ostat, axis=0)  ) / n_samples )
 
         # Statistics of the jackknife distribution
         jackindexes = jackknife_indexes(tdata[0])
@@ -213,9 +245,9 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 Statistic values were likely all equal. Affected CI will \
 be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
         
-        zs = z0 + norm.ppf(alphas).reshape(alphas.shape+(1,)*z0.ndim)
+        zs = z0 + nppf(alphas).reshape(alphas.shape+(1,)*z0.ndim)
 
-        avals = norm.cdf(z0 + zs/(1-a*zs))
+        avals = ncdf(z0 + zs/(1-a*zs))
         np.seterr(**oldnperr)
     else:
         raise ValueError("Method {0} is not supported.".format(method))
@@ -307,6 +339,11 @@ of bootstrap indexes (with list(bootstrap_indexes(data))) as well.
     """
     for _ in xrange(n_samples):
         yield randint(data.shape[0], size=(data.shape[0],))
+
+        
+def bootstrap_indexes_array(data, n_samples=10000):
+    return randint(data.shape[0], size=(n_samples, data.shape[0]))
+
 
 def jackknife_indexes(data):
     """

@@ -3,7 +3,10 @@ from __future__ import division
 import scikits.bootstrap as boot
 import numpy as np
 from numpy.testing.decorators import skipif
-import scipy.stats as stats
+try:
+    import scipy.stats as stats
+except ImportError:
+    pass
 
 try:
     import pandas
@@ -77,24 +80,24 @@ class test_ci():
 
     def test_pi_multialpha(self):
         np.random.seed(1234567890)
-        results = boot.ci(self.data,np.average,method='pi',alpha=(0.1,0.2,0.8,0.9))
+        results = boot.ci(self.data, method='pi', alpha=(0.1,0.2,0.8,0.9))
         np.testing.assert_array_almost_equal(results,np.array([ 0.40351601,  0.51723236,  0.94547054,  1.05749207]))
 
     def test_bca_simple(self):
         np.random.seed(1234567890)
-        results = boot.ci(self.data,np.average)
+        results = boot.ci(self.data)
         np.testing.assert_array_almost_equal(results,np.array([ 0.20907826,  1.19877862]))
 
     def test_bca_errorbar_output_simple(self):
         np.random.seed(1234567890)
-        results_default = boot.ci(self.data,np.average)
+        results_default = boot.ci(self.data)
         np.random.seed(1234567890)
-        results_errorbar = boot.ci(self.data,np.average,output='errorbar')
+        results_errorbar = boot.ci(self.data, output='errorbar')
         np.testing.assert_array_almost_equal(results_errorbar.T,abs(np.average(self.data)-results_default)[np.newaxis])
 
     def test_bca_multialpha(self):
         np.random.seed(1234567890)
-        results = boot.ci(self.data,np.average,alpha=(0.1,0.2,0.8,0.9))
+        results = boot.ci(self.data, alpha=(0.1,0.2,0.8,0.9))
         np.testing.assert_array_almost_equal(results,np.array([ 0.39210727,  0.50775386,  0.93673299,  1.0476729 ]))
 
     def test_bca_multi_multialpha(self):
@@ -126,12 +129,12 @@ class test_ci():
     
     def test_bca_n_samples(self):
         np.random.seed(1234567890)
-        results = boot.ci(self.data,np.average,alpha=(0.1,0.2,0.8,0.9),n_samples=500)
+        results = boot.ci(self.data, alpha=(0.1,0.2,0.8,0.9),n_samples=500)
         np.testing.assert_array_almost_equal(results,np.array([ 0.40027628,  0.5063184 ,  0.94082515,  1.05653929]))
 
     def test_pi_simple(self):
         np.random.seed(1234567890)
-        results = boot.ci(self.data,np.average,method='pi')
+        results = boot.ci(self.data, method='pi')
         np.testing.assert_array_almost_equal(results,np.array([ 0.2288689 ,  1.21259752]))
 
     @skipif(no_pandas)
@@ -142,13 +145,13 @@ class test_ci():
     @skipif(no_pandas)
     def test_bca_pandas_series(self):
         np.random.seed(1234567890)
-        results = boot.ci(self.pds,np.average)
+        results = boot.ci(self.pds)
         np.testing.assert_array_almost_equal(results,np.array([ 0.20907826,  1.19877862]))
 
     @skipif(no_pandas)
     def test_pi_pandas_series(self):
         np.random.seed(1234567890)
-        results = boot.ci(self.pds,np.average,method='pi')
+        results = boot.ci(self.pds, method='pi')
         np.testing.assert_array_almost_equal(results,np.array([ 0.2288689 ,  1.21259752]))
 
 if __name__ == "__main__":

@@ -6,9 +6,11 @@ setup(
     version = "0.3.3dev1",
     packages = find_packages(),
 
-     install_requires = ['numpy','scipy'],
+    install_requires = ['numpy', 'pyerf'],
     namespace_packages = ['scikits'],
-
+    extras_require={
+        'scipy': ["scipy"]
+        },
     package_data = {
         # If any package contains *.txt or *.rst files, include them:
         '': ['*.md', '*.rst'],
@@ -27,9 +29,10 @@ setup(
           'Intended Audience :: Developers',
           'Intended Audience :: Science/Research',
           'License :: OSI Approved :: BSD License',
-          'Programming Language :: C',
           'Programming Language :: Python',
           'Programming Language :: Python :: 3',
+          'Programming Language :: Python :: Implementation :: PyPy',
+          'Programming Language :: Python :: Implementation :: CPython',
           'Topic :: Scientific/Engineering',
           'Operating System :: OS Independent',
           ],

@@ -4,28 +4,31 @@ sudo: false
 matrix:
   include:
     # "Recommended" environments: More recent versions, for Py2 and Py3.
+    - python: "2.6"
+      env: DEPS="numpy scipy"
     - python: "2.7"
       env: DEPS="numpy scipy"
     - python: "3.4"
       env: DEPS="numpy scipy"
     - python: "3.5"
       env: DEPS="numpy scipy"
+    - python: "3.6"
+      env: DEPS="numpy scipy"
+#    - python: "pypy"  # PyPy2 2.5.0
+#      env: DEPS="numpy"
+    - python: "pypy2.7-5.8.0"
+      env: DEPS="numpy"
+    - python: "pypy3.5-5.8.0"
+      env: DEPS="numpy"
+dist: trusty
 
 install:
-  - conda update --yes conda
-  - conda create -n testenv --yes $DEPS pip nose setuptools python=$TRAVIS_PYTHON_VERSION
-  - source activate testenv
-  # for debugging...
-  - echo $PATH
-  - which python
-  - conda info
-  - conda list
-  - python setup.py install
+  - travis_retry pip install --upgrade pip setuptools wheel
+  - if [[ $TRAVIS_PYTHON_VERSION != 'pypy'* ]]; then travis_retry pip install --only-binary=numpy,scipy $DEPS; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 'pypy'* ]]; then travis_retry pip install $DEPS; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 'pypy'* ]]; then travis_retry pip install nose; fi
+  - travis_retry python setup.py install
 
-before_install:
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-3.5.5-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.5.5-Linux-x86_64.sh -O miniconda.sh; fi
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -p /home/travis/mc
-  - export PATH=/home/travis/mc/bin:$PATH
-
-script: nosetests --nologcapture
+script:
+  - if [[ $TRAVIS_PYTHON_VERSION != 'pypy'* ]]; then nosetests --nologcapture; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 'pypy'* ]]; then python -mnose; fi

@@ -136,13 +136,13 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     if np.iterable(alpha):
         alphas = np.array(alpha)
     else:
-        alphas = np.array([alpha/2,1-alpha/2])
+        alphas = np.array([alpha/2, 1-alpha/2])
 
     if multi is None:
-      if isinstance(data, tuple):
-        multi = True
-      else:
-        multi = False
+        if isinstance(data, tuple):
+            multi = True
+        else:
+            multi = False
 
     if statfunction is None:
         if _iter:
@@ -155,10 +155,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # Ensure that the data is actually an array. This isn't nice to pandas,
     # but pandas seems much much slower and the indexes become a problem.
     if not multi:
-      data = np.array(data)
-      tdata = (data,)
+        data = np.array(data)
+        tdata = (data,)
     else:
-      tdata = tuple( np.array(x) for x in data )
+        tdata = tuple( np.array(x) for x in data )
 
     # Deal with ABC *now*, as it doesn't need samples.
     if method == 'abc':
@@ -170,9 +170,9 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         p0 = np.repeat(1.0/n,nn)
 
         try:
-          t0 = statfunction(*tdata,weights=p0)
+            t0 = statfunction(*tdata,weights=p0)
         except TypeError as e:
-          raise TypeError("statfunction does not accept correct arguments for ABC ({0})".format(e.message))
+            raise TypeError("statfunction does not accept correct arguments for ABC ({0})".format(e.message))
 
         di_full = I - p0
         tp = np.fromiter((statfunction(*tdata, weights=p0+ep*di)
@@ -282,9 +282,9 @@ be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
             return stat[(nvals, np.indices(nvals.shape)[1:].squeeze())]
     elif output == 'errorbar':
         if nvals.ndim == 1:
-          return abs(statfunction(data)-stat[nvals])[np.newaxis].T
+            return abs(statfunction(data)-stat[nvals])[np.newaxis].T
         else:
-          return abs(statfunction(data)-stat[(nvals, np.indices(nvals.shape)[1:])])[np.newaxis].T
+            return abs(statfunction(data)-stat[(nvals, np.indices(nvals.shape)[1:])])[np.newaxis].T
     else:
         raise ValueError("Output option {0} is not supported.".format(output))
     
@@ -328,8 +328,8 @@ References
 Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 bootstrap R package: http://cran.r-project.org/web/packages/bootstrap/
     """
-    return ci(data, statfunction=lambda x,weights: stat(x,weights), alpha=alpha, epsilon=epsilon,
-            method='abc')
+    return ci(data, statfunction=stat, alpha=alpha, epsilon=epsilon,
+              method='abc')
 
 def bootstrap_indexes(data, n_samples=10000):
     """

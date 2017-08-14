@@ -42,7 +42,7 @@ warnings.simplefilter('always', InstabilityWarning)
 
 def ci(data, statfunction=None, alpha=0.05, n_samples=10000,
        method='bca', output='lowhigh', epsilon=0.001, multi=None,
-       _iter=True):
+       strata=None, _iter=True):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -208,11 +208,11 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # Instead, we can generate just the indexes, and then apply the statfun
     # to those indexes.
     if _iter:
-        bootindexes = bootstrap_indexes(tdata[0], n_samples)
+        bootindexes = bootstrap_indexes(tdata[0], n_samples, strata=strata)
         stat = np.array([statfunction(*(x[indexes] for x in tdata))
                          for indexes in bootindexes])
     else:
-        bootindexes = bootstrap_indexes_array(tdata[0], n_samples)
+        bootindexes = bootstrap_indexes_array(tdata[0], n_samples, strata=strata)
         stat = statfunction(*(x[bootindexes] for x in tdata))
 
     stat.sort(axis=0)
@@ -290,21 +290,31 @@ be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
         raise ValueError("Output option {0} is not supported.".format(output))
     
     
-
-
-def bootstrap_indexes(data, n_samples=10000):
+def bootstrap_indexes(data, n_samples=10000, strata=None):
     """
 Given data points data, where axis 0 is considered to delineate points, return
 an generator for sets of bootstrap indexes. This can be used as a list
 of bootstrap indexes (with list(bootstrap_indexes(data))) as well.
     """
-    for _ in xrange(n_samples):
-        yield randint(data.shape[0], size=(data.shape[0],))
+    output = bootstrap_indexes_array(data, n_samples, strata)
+    for x in output:
+        yield x
 
         
-def bootstrap_indexes_array(data, n_samples=10000):
-    return randint(data.shape[0], size=(n_samples, data.shape[0]))
-
+def bootstrap_indexes_array(data, n_samples=10000, strata=None):
+    lendata = data.shape[0]
+    if strata is not None:
+        strat_inds = np.unique(strata)
+    if strata is None or len(strat_inds) == 1:
+        return randint(lendata,
+                       size=(n_samples, lendata))
+    else:
+        output = np.empty(size=(n_samples, lendata))
+        for ind in strat_inds:
+            ind_locs = np.arange(lendata)[strata == ind]
+            output[:, ind_locs] = np.random.choice(
+                ind_locs, size=(n_samples, len(ind_locs)))
+        return output
 
 def jackknife_indexes(data):
     """

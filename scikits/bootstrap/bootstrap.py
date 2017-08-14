@@ -1,5 +1,8 @@
+from __future__ import absolute_import, division, print_function
+
 from numpy.random import randint
 from scipy.stats import norm
+from math import ceil
 import numpy as np
 import warnings
 
@@ -338,49 +341,39 @@ samples)
     return base[:,0:size]
 
 
-def it_moving_blocks(n_obs, block_length, truncate=True):
-    '''Generator for moving-block boottrap.
-
-    Notes
-    -----
-    This uses wrapping from the end to the beginning of the data series.
-
-    If truncate is True, then the returned index is valid for the original
-    data series.
-
-    If truncate is False, then the returned index array has a largest possible
-    index equal to ``n_obs + block_length - 2``. It needs to index into an
-    array that has the first ``block_length - 1`` observations concatenated
-    to the end.
-
-    #TODO: reverse indexing so we have negative indices for automatic wrapping
-
-    '''
-    n_blocks = int(np.ceil(n_obs * 1. / block_length))
-    idx0 = np.cumsum(np.ones((n_blocks, block_length), int), 1) - 1
-
-    while True:
-        # wrap with negative
-        #start = np.random.randint(0, n_obs, size=n_blocks)
-        start = np.random.randint(0, n_obs, size=n_blocks) - block_length + 1
-
-        # moving blocks, with overlap
-        idx = (idx0 + start[:,None]).ravel()
-        if truncate:
-            # reindex wrapped observations
-            mask = idx >= n_obs
-            idx[mask] -= n_obs
-        yield idx[:n_obs]
-
-
-def bootstrap_indexes_mblocks(data, n_samples=10000, block_lenght=3, truncate=True):
+def bootstrap_indexes_moving_block(data, n_samples=10000,
+                                   block_length=3, wrap=False):
     """Generate moving-block bootstrap samples.
 
-    Given data points `data`, where axis 0 is considered to delineate points,
-    return a generator for sets of bootstrap indexes. This can be used as a
-    list of bootstrap indexes (with list(bootstrap_indexes_mblocks(data))) as well.
-    """
+Given data points `data`, where axis 0 is considered to delineate points,
+return a generator for sets of bootstrap indexes. This can be used as a
+list of bootstrap indexes (with list(bootstrap_indexes_moving_block(data))) as
+well.
+
+Parameters
+----------
+
+n_samples [default 10000]: the number of subsamples to generate.
+
+block_length [default 3]: the length of block.
+
+wrap [default False]: if false, choose only blocks within the data, making
+the last block for data of length L start at L-block_length.  If true, choose
+blocks starting anywhere, and if they extend past the end of the data, wrap
+around to the beginning of the data again.
+"""
     n_obs = data.shape[0]
-    idx = np.arange(n_obs)
-    iter_obj = it_moving_blocks(n_obs, block_lenght, truncate)
-    return np.array([idx[iter_obj.next()] for _ in range(n_samples)])
+    n_blocks = int(ceil(n_obs / block_length))
+    nexts = np.repeat(np.arange(0, block_length)[None, :], n_blocks, axis=0)
+
+    if wrap:
+        last_block = n_obs
+    else:
+        last_block = n_obs - block_length
+    
+    for _ in xrange(n_samples):
+        blocks = np.random.randint(0, last_block, size=n_blocks)
+        if not wrap:
+            yield (blocks[:, None]+nexts).ravel()[:n_obs]
+        else:
+            yield np.mod((blocks[:, None]+nexts).ravel()[:n_obs], n_obs)

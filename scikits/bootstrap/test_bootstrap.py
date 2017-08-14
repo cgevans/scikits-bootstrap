@@ -1,3 +1,5 @@
+from __future__ import division
+
 import scikits.bootstrap as boot
 import numpy as np
 from numpy.testing.decorators import skipif
@@ -26,10 +28,10 @@ class test_ci():
         indexes = np.array([x for x in boot.bootstrap_indexes(np.array([1,2,3,4,5]), n_samples=3)])
         np.testing.assert_array_equal(indexes, np.array([[2, 4, 3, 1, 3],[1, 4, 1, 4, 4],[0, 2, 1, 4, 4]]))
 
-    def test_bootstrap_indexes_mblocks(self):
-        np.random.seed(1234567890)
-        indexes = np.array([x for x in boot.bootstrap_indexes_mblocks(np.array([1,2,3,4,5]), n_samples=3)])
-        np.testing.assert_array_equal(indexes, np.array([[0, 1, 2, 2, 3],[1, 2, 3, 4, 0],[1, 2, 3, 4, 0]]))
+    def test_bootstrap_indexes_moving_block(self):
+        np.random.seed(1234567897)
+        indexes = np.array([x for x in boot.bootstrap_indexes_moving_block(np.array([1,2,3,4,5]), n_samples=3)])
+        np.testing.assert_array_equal(indexes, np.array([[1, 2, 3, 1, 2], [0, 1, 2, 0, 1], [0, 1, 2, 0, 1]]))
 
     def test_jackknife_indexes(self):
         np.random.seed(1234567890)

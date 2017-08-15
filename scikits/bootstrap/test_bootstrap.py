@@ -3,11 +3,7 @@ from __future__ import division
 import scikits.bootstrap as boot
 import numpy as np
 from numpy.testing.decorators import skipif
-try:
-    no_scipy = False
-    import scipy.stats as stats
-except ImportError:
-    no_scipy = True
+
 
 try:
     import pandas
@@ -115,33 +111,30 @@ class test_ci():
         np.testing.assert_array_almost_equal(
             results, np.array([0.39210727, 0.50775386, 0.93673299, 1.0476729]))
         
-    @skipif(no_scipy)
     def test_bca_multi_multialpha(self):
         np.random.seed(1234567890)
-        results1 = boot.ci((self.x,self.y), lambda a,b: stats.linregress(a,b)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
+        results1 = boot.ci((self.x,self.y), lambda a,b: np.polyfit(a,b,1), alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
         np.random.seed(1234567890)
-        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
+        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1), alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
         np.testing.assert_array_almost_equal(results1,results2)
 
-    @skipif(no_scipy)
     def test_bca_multi_2dout_multialpha(self):
         np.random.seed(1234567890)
-        results1 = boot.ci((self.x,self.y), stats.linregress, alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
+        results1 = boot.ci((self.x,self.y), lambda a,b: np.polyfit(a,b,1), alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
         np.random.seed(1234567890)
-        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[0], alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
+        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1)[0], alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
         np.random.seed(1234567890)
-        results3 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
+        results3 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
         np.testing.assert_array_almost_equal(results1[:,0],results2)
         np.testing.assert_array_almost_equal(results1[:,1],results3)
 
-    @skipif(no_scipy)
     def test_pi_multi_2dout_multialpha(self):
         np.random.seed(1234567890)
-        results1 = boot.ci((self.x,self.y), stats.linregress, alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
+        results1 = boot.ci((self.x,self.y), lambda a,b: np.polyfit(a,b,1), alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
         np.random.seed(1234567890)
-        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[0], alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
+        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1)[0], alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
         np.random.seed(1234567890)
-        results3 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: stats.linregress(a)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
+        results3 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
         np.testing.assert_array_almost_equal(results1[:,0],results2)
         np.testing.assert_array_almost_equal(results1[:,1],results3)
     

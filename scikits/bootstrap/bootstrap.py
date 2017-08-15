@@ -3,23 +3,23 @@ from __future__ import absolute_import, division, print_function
 from numpy.random import randint
 from math import ceil, sqrt
 import numpy as np
-try:
-    from scipy.stats import norm
-    nppf = norm.ppf
-    ncdf = norm.cdf
-except ImportError:
-    import pyerf
-    s2 = sqrt(2)
-    
-    def _ncdf_py(x):
-        return 0.5*(1+pyerf.erf(x/s2))
-    
-    def _nppf_py(x):
-        return s2 * pyerf.erfinv(2*x-1)
-    nppf = np.vectorize(_nppf_py, [np.float])
-    ncdf = np.vectorize(_ncdf_py, [np.float])
-
+import pyerf
 import warnings
+
+s2 = sqrt(2)
+
+
+def _ncdf_py(x):
+    return 0.5*(1+pyerf.erf(x/s2))
+
+
+def _nppf_py(x):
+    return s2 * pyerf.erfinv(2*x-1)
+
+
+nppf = np.vectorize(_nppf_py, [np.float])
+ncdf = np.vectorize(_ncdf_py, [np.float])
+
 
 __version__ = '1.0.0.dev1'
 

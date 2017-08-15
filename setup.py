@@ -3,14 +3,12 @@
 from setuptools import setup, find_packages
 setup(
     name = "scikits.bootstrap",
-    version = "1.0.0.dev1",
+    version = "1.0.0.dev2",
     packages = find_packages(),
 
     install_requires = ['numpy', 'pyerf'],
     namespace_packages = ['scikits'],
-    extras_require={
-        'scipy': ["scipy"]
-        },
+
     package_data = {
         # If any package contains *.txt or *.rst files, include them:
         '': ['*.md', '*.rst'],

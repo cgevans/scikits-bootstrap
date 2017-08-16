@@ -4,8 +4,6 @@ sudo: false
 matrix:
   include:
     # "Recommended" environments: More recent versions, for Py2 and Py3.
-    - python: "2.6"
-      env: DEPS="numpy scipy"
     - python: "2.7"
       env: DEPS="numpy scipy"
     - python: "3.4"

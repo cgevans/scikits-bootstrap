@@ -21,7 +21,7 @@ nppf = np.vectorize(_nppf_py, [np.float])
 ncdf = np.vectorize(_ncdf_py, [np.float])
 
 
-__version__ = '1.0.0.dev1'
+__version__ = '1.0.0'
 
 # Keep python 2/3 compatibility, without using six. At some point,
 # we may need to add six as a requirement, but right now we can avoid it.

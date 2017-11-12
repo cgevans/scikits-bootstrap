@@ -27,6 +27,11 @@ by the Evans Foundation.
 Version Info
 ============
 
+v1.0.0: scikits.bootstrap now uses pyerf, which means that it doesn't actually
+        need scipy at all.  It should work with PyPy, has some improved error
+		and warning messages, and should be a bit faster in many cases.  The old
+		ci_abc function has been removed: use method='abc' instead.
+
 v0.3.3: Bug fixes.  Warnings have been cleaned up, and are implemented for BCa
         when all statistic values are equal (a common confusion in prior versions).
 		Related numpy warnings are now suppressed.  Some tests on Python 2 were

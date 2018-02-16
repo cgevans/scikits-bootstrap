@@ -43,3 +43,19 @@ v0.3.2: This version contains various fixes to allow compatibility with Python
         slightly modify the output of bootstrap_indexes, from a Python list to
         a Numpy array that can be iterated over in the same manner. This should
         only be important in extremely unusual situations.
+
+
+
+Installation and Usage
+======================
+As described (<http://scikits.appspot.com/bootstrap>), the package can be installed using pip.
+
+`pip install scikits.bootstrap`
+
+Usage example for python 3.x:
+
+```
+import scikits.bootstrap as boot
+import numpy as np
+boot.ci(np.random.rand(100), np.average)
+```

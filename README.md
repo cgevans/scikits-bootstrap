@@ -27,6 +27,8 @@ by the Evans Foundation.
 Version Info
 ============
 
+v1.0.1: Licensing information added.
+
 v1.0.0: scikits.bootstrap now uses pyerf, which means that it doesn't actually
         need scipy at all.  It should work with PyPy, has some improved error
 		and warning messages, and should be a bit faster in many cases.  The old

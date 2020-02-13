@@ -14,7 +14,7 @@ matrix:
       env: DEPS="numpy scipy"
     - python: "3.7"
       env: DEPS="numpy scipy pandas"
-    - python: "pypy"
+    - python: "pypy2"
       env: DEPS="numpy"
     - python: "pypy3"
       env: DEPS="numpy"

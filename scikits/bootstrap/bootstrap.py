@@ -387,3 +387,82 @@ around to the beginning of the data again.
             yield (blocks[:, None]+nexts).ravel()[:n_obs]
         else:
             yield np.mod((blocks[:, None]+nexts).ravel()[:n_obs], n_obs)
+
+
+def pval(data, statfunction=np.average, compfunction=lambda s: s > 0, n_samples=10000, multi=None):
+    """
+Given a set of data ``data``, a statistics function ``statfunction`` that
+applies to that data, and the criteriafunction ``compfunction``, computes the bootstrap probability that
+the statistics function ``statfunction`` on that data satisfies the the criteria function ``compfunction``.
+Data points are assumed to be delineated by axis 0.
+
+Parameters
+----------
+data: array_like, shape (N, ...) OR tuple of array_like all with shape (N, ...)
+    Input data. Data points are assumed to be delineated by axis 0. Beyond this,
+    the shape doesn't matter, so long as ``statfunction`` can be applied to the
+    array. If a tuple of array_likes is passed, then samples from each array (along
+    axis 0) are passed in order as separate parameters to the statfunction. The
+    type of data (single array or tuple of arrays) can be explicitly specified
+    by the multi parameter.
+statfunction: function (data, weights=(weights, optional)) -> value
+    This function should accept samples of data from ``data``. It is applied
+    to these samples individually.
+compfunction: function (stat) -> True or False
+    This function should accept result of the statfunction computed on the samples of data from ``data``.
+    It is applied to these results individually.
+n_samples: float, optional
+    The number of bootstrap samples to use (default=10000)
+multi: boolean, optional
+    If False, assume data is a single array. If True, assume data is a tuple/other
+    iterable of arrays of the same length that should be sampled together. If None,
+    decide based on whether the data is an actual tuple. (default=None)
+
+Returns
+-------
+probability: a float
+    The probability that the statistics defined by the statfunction satisfies the criteria defined by the compfunction.
+
+Examples
+--------
+To calculate the confidence intervals for the mean of some numbers:
+
+>> boot.ci( np.randn(100), np.average )
+
+Given some data points in arrays x and y calculate the confidence intervals
+for all linear regression coefficients simultaneously:
+
+>> boot.ci( (x,y), scipy.stats.linregress )
+
+References
+----------
+Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
+    """
+
+    if multi == None:
+      if isinstance(data, tuple):
+        multi = True
+      else:
+        multi = False
+
+    # Ensure that the data is actually an array. This isn't nice to pandas,
+    # but pandas seems much much slower and the indexes become a problem.
+    if multi == False:
+      data = np.array(data)
+      tdata = (data,)
+    else:
+      tdata = tuple( np.array(x) for x in data )
+
+
+    # We don't need to generate actual samples; that would take more memory.
+    # Instead, we can generate just the indexes, and then apply the statfun
+    # to those indexes.
+    bootindexes = bootstrap_indexes( tdata[0], n_samples )
+    stat = np.array([statfunction(*(x[indexes] for x in tdata)) for indexes in bootindexes])
+    stat.sort(axis=0)
+
+    pval_stat = [compfunction(s) for s in stat]
+    # print pval_stat
+    pval = np.mean(pval_stat)
+
+    return pval

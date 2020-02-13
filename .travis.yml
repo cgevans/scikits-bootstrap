@@ -14,9 +14,9 @@ matrix:
       env: DEPS="numpy scipy"
     - python: "3.7"
       env: DEPS="numpy scipy pandas"
-    - python: "pypy2.7-5.8.0"
+    - python: "pypy"
       env: DEPS="numpy"
-    - python: "pypy3.5-5.8.0"
+    - python: "pypy3"
       env: DEPS="numpy"
 dist: bionic
 

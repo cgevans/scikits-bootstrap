@@ -6,12 +6,10 @@ matrix:
     # "Recommended" environments: More recent versions, for Py2 and Py3.
     - python: "2.7"
       env: DEPS="numpy scipy"
-    - python: "3.4"
-      env: DEPS="numpy scipy"
     - python: "3.5"
       env: DEPS="numpy scipy"
     - python: "3.6"
-      env: DEPS="numpy scipy
+      env: DEPS="numpy scipy"
     - python: "3.7"
       env: DEPS="numpy scipy"
     - python: "3.7"

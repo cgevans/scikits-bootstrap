@@ -2,7 +2,7 @@ from __future__ import division
 
 import scikits.bootstrap as boot
 import numpy as np
-from numpy.testing.decorators import skipif
+from numpy.testing import dec
 
 
 try:
@@ -148,18 +148,18 @@ class test_ci():
         results = boot.ci(self.data, method='pi')
         np.testing.assert_array_almost_equal(results,np.array([ 0.2288689 ,  1.21259752]))
 
-    @skipif(no_pandas)
+    @dec.skipif(no_pandas)
     def test_abc_pandas_series(self):
         results = boot.ci(self.pds, method='abc')
         np.testing.assert_array_almost_equal(results,np.array([ 0.20982275,  1.20374686]))
 
-    @skipif(no_pandas)
+    @dec.skipif(no_pandas)
     def test_bca_pandas_series(self):
         np.random.seed(1234567890)
         results = boot.ci(self.pds)
         np.testing.assert_array_almost_equal(results,np.array([ 0.20907826,  1.19877862]))
 
-    @skipif(no_pandas)
+    @dec.skipif(no_pandas)
     def test_pi_pandas_series(self):
         np.random.seed(1234567890)
         results = boot.ci(self.pds, method='pi')

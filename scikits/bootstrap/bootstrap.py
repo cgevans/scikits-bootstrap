@@ -156,13 +156,13 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         # Ensure that the statfunction is actually a callable, handling
         # the confusion where someone passes a *return value* of a function
         # rather than a function.
-        raise TypeError(f"statfunction {statfunction} is not callable.  If you tried "
-                        "calling a function with arguments here, for example, by using "
-                        "statfunction=myfunction(data, arg), then you probably need "
-                        "to wrap your function in a lambda, eg, as "
-                        "statfunction=(lambda data: myfunction(data, arg)). "
-                        "If your function doesn't need any arguments other than the data, "
-                        "you can alternatively use statfunction=myfunction (without "
+        raise TypeError(f"statfunction {statfunction} is not callable.  If you tried " +
+                        "calling a function with arguments here, for example, by using " +
+                        "statfunction=myfunction(data, arg), then you probably need " +
+                        "to wrap your function in a lambda, eg, as " +
+                        "statfunction=(lambda data: myfunction(data, arg)). " +
+                        "If your function doesn't need any arguments other than the data, " +
+                        "you can alternatively use statfunction=myfunction (without " +
                         "parentheses.")
         
     # Ensure that the data is actually an array. This isn't nice to pandas,

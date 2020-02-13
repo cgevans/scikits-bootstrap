@@ -11,14 +11,16 @@ matrix:
     - python: "3.5"
       env: DEPS="numpy scipy"
     - python: "3.6"
+      env: DEPS="numpy scipy
+    - python: "3.7"
       env: DEPS="numpy scipy"
-#    - python: "pypy"  # PyPy2 2.5.0
-#      env: DEPS="numpy"
+    - python: "3.7"
+      env: DEPS="numpy scipy pandas"
     - python: "pypy2.7-5.8.0"
       env: DEPS="numpy"
     - python: "pypy3.5-5.8.0"
       env: DEPS="numpy"
-dist: trusty
+dist: bionic
 
 install:
   - travis_retry pip install --upgrade pip setuptools wheel

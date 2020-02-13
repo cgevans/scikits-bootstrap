@@ -156,7 +156,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         # Ensure that the statfunction is actually a callable, handling
         # the confusion where someone passes a *return value* of a function
         # rather than a function.
-        raise TypeError(f"statfunction {statfunction} is not callable.  If you tried " +
+        raise TypeError("statfunction {} is not callable.  If you tried ".format(statfunction) +
                         "calling a function with arguments here, for example, by using " +
                         "statfunction=myfunction(data, arg), then you probably need " +
                         "to wrap your function in a lambda, eg, as " +

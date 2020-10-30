@@ -23,34 +23,34 @@ class test_ci():
         if not no_pandas:
             self.pds = pandas.Series(self.data,index=np.arange(50,70))
 
-    def test_bootstrap_indexes(self):
+    def test_bootstrap_indices(self):
         np.random.seed(1234567890)
-        indexes = np.array([x for x in boot.bootstrap_indexes(np.array([1,2,3,4,5]), n_samples=3)])
-        np.testing.assert_array_equal(indexes, np.array([[2, 4, 3, 1, 3],[1, 4, 1, 4, 4],[0, 2, 1, 4, 4]]))
+        indices = np.array([x for x in boot.bootstrap_indices(np.array([1,2,3,4,5]), n_samples=3)])
+        np.testing.assert_array_equal(indices, np.array([[2, 4, 3, 1, 3],[1, 4, 1, 4, 4],[0, 2, 1, 4, 4]]))
 
-    def test_bootstrap_indexes_moving_block(self):
+    def test_bootstrap_indices_moving_block(self):
         np.random.seed(1234567897)
-        indexes = np.array([x for x in boot.bootstrap_indexes_moving_block(np.array([1,2,3,4,5]), n_samples=3)])
-        np.testing.assert_array_equal(indexes, np.array([[1, 2, 3, 1, 2], [0, 1, 2, 0, 1], [0, 1, 2, 0, 1]]))
+        indices = np.array([x for x in boot.bootstrap_indices_moving_block(np.array([1,2,3,4,5]), n_samples=3)])
+        np.testing.assert_array_equal(indices, np.array([[1, 2, 3, 1, 2], [0, 1, 2, 0, 1], [0, 1, 2, 0, 1]]))
 
-    def test_jackknife_indexes(self):
+    def test_jackknife_indices(self):
         np.random.seed(1234567890)
-        indexes = np.array([x for x in boot.jackknife_indexes(np.array([1,2,3]))])
-        np.testing.assert_array_equal(indexes, np.array([[1, 2],[0, 2],[0, 1]]))
+        indices = np.array([x for x in boot.jackknife_indices(np.array([1,2,3]))])
+        np.testing.assert_array_equal(indices, np.array([[1, 2],[0, 2],[0, 1]]))
 
-    def test_subsample_indexes(self):
-        indexes = boot.subsample_indexes(self.data, 1000, 0.5)
+    def test_subsample_indices(self):
+        indices = boot.subsample_indices(self.data, 1000, 0.5)
         # Each sample when sorted must contain len(self.data)/2 unique numbers (eg, be entirely unique)
-        for x in indexes:
+        for x in indices:
             np.testing.assert_(len(np.unique(x)) == len(self.data)/2)
 
-    def test_subsample_indexes_notsame(self):
+    def test_subsample_indices_notsame(self):
         np.random.seed(1234567890)
-        indexes = boot.subsample_indexes(np.arange(0,50), 1000, -1)
+        indices = boot.subsample_indices(np.arange(0,50), 1000, -1)
         # Test to make sure that subsamples are not all the same.
         # In theory, this test could fail even with correct code, but in
         # practice the probability is too low to care, and the test is useful.
-        np.testing.assert_(not np.all(indexes[0]==indexes[1:]))
+        np.testing.assert_(not np.all(indices[0]==indices[1:]))
 
     def test_abc_simple(self):
         results = boot.ci(self.data,

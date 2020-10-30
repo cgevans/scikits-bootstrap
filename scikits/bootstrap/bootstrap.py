@@ -147,7 +147,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         multi = bool(isinstance(data, Tuple))
 
     # Ensure that the data is actually an array. This isn't nice to pandas,
-    # but pandas seems much much slower and the indexes become a problem.
+    # but pandas seems much much slower and the indices become a problem.
     if multi and isinstance(data, Iterable):
         tdata = tuple( np.array(x) for x in data )
     else:
@@ -172,11 +172,11 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         return _ci_abc(tdata, statfunction, epsilon, alphas, output)
 
     # We don't need to generate actual samples; that would take more memory.
-    # Instead, we can generate just the indexes, and then apply the statfun
-    # to those indexes.
-    bootindexes = bootstrap_indexes(tdata[0], n_samples)
-    stat = np.array([statfunction(*(x[indexes] for x in tdata))
-                        for indexes in bootindexes])
+    # Instead, we can generate just the indices, and then apply the statfun
+    # to those indices.
+    bootindices = bootstrap_indices(tdata[0], n_samples)
+    stat = np.array([statfunction(*(x[indices] for x in tdata))
+                        for indices in bootindices])
     stat.sort(axis=0)
 
     if method == 'pi':     # Percentile Interval Method
@@ -273,9 +273,9 @@ def _avals_bca(tdata, statfunction, stat, alphas, n_samples):
     z0 = nppf((1.0*np.sum(stat < ostat, axis=0)) / n_samples)
 
     # Statistics of the jackknife distribution
-    jackindexes = jackknife_indexes(tdata[0])
-    jstat = [statfunction(*(x[indexes] for x in tdata))
-             for indexes in jackindexes]
+    jackindices = jackknife_indices(tdata[0])
+    jstat = [statfunction(*(x[indices] for x in tdata))
+             for indices in jackindices]
     jmean = np.mean(jstat, axis=0)
 
     # Temporarily kill numpy warnings:
@@ -285,7 +285,7 @@ def _avals_bca(tdata, statfunction, stat, alphas, n_samples):
         6.0 * np.sum((jmean - jstat)**2, axis=0)**1.5)
     if np.any(np.isnan(a)):
         nanind = np.nonzero(np.isnan(a))
-        warnings.warn("BCa acceleration values for indexes {} were undefined. \
+        warnings.warn("BCa acceleration values for indices {} were undefined. \
 Statistic values were likely all equal. Affected CI will \
 be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
 
@@ -296,20 +296,24 @@ be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
 
     return avals
 
-def bootstrap_indexes(data: np.ndarray, n_samples: int=10000):
+def bootstrap_indices(data: np.ndarray, n_samples: int=10000):
     """
 Given data points data, where axis 0 is considered to delineate points, return
-an generator for sets of bootstrap indexes. This can be used as a list
-of bootstrap indexes (with list(bootstrap_indexes(data))) as well.
+an generator for sets of bootstrap indices. This can be used as a list
+of bootstrap indices (with list(bootstrap_indices(data))) as well.
     """
     for _ in range(n_samples):
         yield randint(data.shape[0], size=(data.shape[0],))
 
+def bootstrap_indices_independent(data: Tuple[np.ndarray], n_samples: int=10000):
+    for _ in range(n_samples):
+        yield tuple(randint(x.shape[0], size=(x.shape[0],)) for x in data)
 
-def jackknife_indexes(data: np.ndarray):
+
+def jackknife_indices(data: np.ndarray):
     """
 Given data points data, where axis 0 is considered to delineate points, return
-a list of arrays where each array is a set of jackknife indexes.
+a list of arrays where each array is a set of jackknife indices.
 
 For a given set of data Y, the jackknife sample J[i] is defined as the data set
 Y with the ith data point deleted.
@@ -317,10 +321,10 @@ Y with the ith data point deleted.
     base = np.arange(0,len(data))
     return (np.delete(base,i) for i in base)
 
-def subsample_indexes(data: np.ndarray, n_samples: int=1000, size: float=0.5):
+def subsample_indices(data: np.ndarray, n_samples: int=1000, size: float=0.5):
     """
 Given data points data, where axis 0 is considered to delineate points, return
-a list of arrays where each array is indexes a subsample of the data of size
+a list of arrays where each array is indices a subsample of the data of size
 ``size``. If size is >= 1, then it will be taken to be an absolute size. If
 size < 1, it will be taken to be a fraction of the data size. If size == -1, it
 will be taken to mean subsamples the same size as the sample (ie, permuted
@@ -338,13 +342,13 @@ samples)
     return base[:,0:size]
 
 
-def bootstrap_indexes_moving_block(data: np.ndarray, n_samples: int=10000,
+def bootstrap_indices_moving_block(data: np.ndarray, n_samples: int=10000,
                                    block_length: int=3, wrap: bool=False):
     """Generate moving-block bootstrap samples.
 
 Given data points `data`, where axis 0 is considered to delineate points,
-return a generator for sets of bootstrap indexes. This can be used as a
-list of bootstrap indexes (with list(bootstrap_indexes_moving_block(data))) as
+return a generator for sets of bootstrap indices. This can be used as a
+list of bootstrap indices (with list(bootstrap_indices_moving_block(data))) as
 well.
 
 Parameters
@@ -434,7 +438,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         multi = bool(isinstance(data, tuple))
 
     # Ensure that the data is actually an array. This isn't nice to pandas,
-    # but pandas seems much much slower and the indexes become a problem.
+    # but pandas seems much much slower and the indices become a problem.
     if not multi:
         data = np.array(data)
         tdata = (data,)
@@ -443,10 +447,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
 
     # We don't need to generate actual samples; that would take more memory.
-    # Instead, we can generate just the indexes, and then apply the statfun
-    # to those indexes.
-    bootindexes = bootstrap_indexes( tdata[0], n_samples )
-    stat = np.array([statfunction(*(x[indexes] for x in tdata)) for indexes in bootindexes])
+    # Instead, we can generate just the indices, and then apply the statfun
+    # to those indices.
+    bootindices = bootstrap_indices( tdata[0], n_samples )
+    stat = np.array([statfunction(*(x[indices] for x in tdata)) for indices in bootindices])
     stat.sort(axis=0)
 
     pval_stat = [compfunction(s) for s in stat]

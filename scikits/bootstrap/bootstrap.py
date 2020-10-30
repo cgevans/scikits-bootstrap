@@ -215,8 +215,8 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         return stat[(nvals, np.indices(nvals.shape)[1:].squeeze())]
     elif output == 'errorbar':
         if nvals.ndim == 1:
-            return abs(statfunction(data)-stat[nvals])[np.newaxis].T
-        return abs(statfunction(data)-stat[(nvals, np.indices(nvals.shape)[1:])])[np.newaxis].T
+            return abs(statfunction(*tdata)-stat[nvals])[np.newaxis].T
+        return abs(statfunction(*tdata)-stat[(nvals, np.indices(nvals.shape)[1:])])[np.newaxis].T
 
     raise ValueError("Output option {0} is not supported.".format(output))
 

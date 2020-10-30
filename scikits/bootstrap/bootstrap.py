@@ -151,8 +151,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     if multi and isinstance(data, Iterable):
         tdata = tuple( np.array(x) for x in data )
     else:
-        ndata = np.array(data)
-        tdata = (ndata,)
+        tdata = (np.array(data),)
 
     if statfunction is None:
         statfunction = np.average
@@ -169,49 +168,8 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
                         "you can alternatively use statfunction=myfunction (without " +
                         "parentheses.")
 
-    # Deal with ABC *now*, as it doesn't need samples.
     if method == 'abc':
-        n = tdata[0].shape[0]*1.0
-        nn = tdata[0].shape[0]
-
-        I = np.identity(nn)
-        ep = epsilon / n*1.0
-        p0 = np.repeat(1.0/n,nn)
-
-        try:
-            t0 = statfunction(*tdata,weights=p0)
-        except TypeError as e:
-            raise TypeError("statfunction does not accept correct arguments for ABC") from e
-
-        di_full = I - p0
-        tp = np.fromiter((statfunction(*tdata, weights=p0+ep*di)
-                          for di in di_full), dtype=np.float)
-        tm = np.fromiter((statfunction(*tdata, weights=p0-ep*di)
-                          for di in di_full), dtype=np.float)
-        t1 = (tp-tm)/(2*ep)
-        t2 = (tp-2*t0+tm)/ep**2
-
-        sighat = np.sqrt(np.sum(t1**2))/n
-        a = (np.sum(t1**3))/(6*n**3*sighat**3)
-        delta = t1/(n**2*sighat)
-        cq = (statfunction(*tdata,weights=p0+ep*delta)-2*t0+statfunction(
-            *tdata,weights=p0-ep*delta))/(2*sighat*ep**2)
-        bhat = np.sum(t2)/(2*n**2)
-        curv = bhat/sighat-cq
-        z0 = nppf(2*ncdf(a)*ncdf(-curv))
-        Z = z0+nppf(alphas)
-        za = Z/(1-a*Z)**2
-        # stan = t0 + sighat * nppf(alphas)
-        abc = np.zeros_like(alphas)
-        for i in range(0,len(alphas)):
-            abc[i] = statfunction(*tdata,weights=p0+za[i]*delta)
-
-        if output == 'lowhigh':
-            return abc
-        elif output == 'errorbar':
-            return abs(abc-statfunction(tdata))[np.newaxis].T
-        
-        raise ValueError("Output option {0} is not supported.".format(output))
+        return _ci_abc(tdata, statfunction, epsilon, alphas, output)
 
     # We don't need to generate actual samples; that would take more memory.
     # Instead, we can generate just the indexes, and then apply the statfun
@@ -219,42 +177,12 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     bootindexes = bootstrap_indexes(tdata[0], n_samples)
     stat = np.array([statfunction(*(x[indexes] for x in tdata))
                         for indexes in bootindexes])
-
     stat.sort(axis=0)
 
-    # Percentile Interval Method
-    if method == 'pi':
+    if method == 'pi':     # Percentile Interval Method
         avals = alphas
-
-    # Bias-Corrected Accelerated Method
-    elif method == 'bca':
-
-        # The value of the statistic function applied just to the actual data.
-        ostat = statfunction(*tdata)
-
-        # The bias correction value.
-        z0 = nppf( ( 1.0*np.sum(stat < ostat, axis=0)  ) / n_samples )
-
-        # Statistics of the jackknife distribution
-        jackindexes = jackknife_indexes(tdata[0])
-        jstat = [statfunction(*(x[indexes] for x in tdata)) for indexes in jackindexes]
-        jmean = np.mean(jstat,axis=0)
-
-        # Temporarily kill numpy warnings:
-        oldnperr = np.seterr(invalid='ignore')
-        # Acceleration value
-        a = np.sum((jmean - jstat)**3, axis=0) / (
-            6.0 * np.sum((jmean - jstat)**2, axis=0)**1.5)
-        if np.any(np.isnan(a)):
-            nanind = np.nonzero(np.isnan(a))
-            warnings.warn("BCa acceleration values for indexes {} were undefined. \
-Statistic values were likely all equal. Affected CI will \
-be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
-
-        zs = z0 + nppf(alphas).reshape(alphas.shape+(1,)*z0.ndim)
-
-        avals = ncdf(z0 + zs/(1-a*zs))
-        np.seterr(**oldnperr)
+    elif method == 'bca':     # Bias-Corrected Accelerated Method
+        avals = _avals_bca(tdata, statfunction, stat, alphas, n_samples)
     else:
         raise ValueError("Method {0} is not supported.".format(method))
 
@@ -292,8 +220,81 @@ be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
 
     raise ValueError("Output option {0} is not supported.".format(output))
 
+def _ci_abc(tdata, statfunction, epsilon, alphas, output):
+    n = tdata[0].shape[0]*1.0
+    nn = tdata[0].shape[0]
+
+    I = np.identity(nn)
+    ep = epsilon / n*1.0
+    p0 = np.repeat(1.0/n, nn)
+
+    try:
+        t0 = statfunction(*tdata, weights=p0)
+    except TypeError as e:
+        raise TypeError(
+            "statfunction does not accept correct arguments for ABC") from e
+
+    di_full = I - p0
+    tp = np.fromiter((statfunction(*tdata, weights=p0+ep*di)
+                      for di in di_full), dtype=np.float)
+    tm = np.fromiter((statfunction(*tdata, weights=p0-ep*di)
+                      for di in di_full), dtype=np.float)
+    t1 = (tp-tm)/(2*ep)
+    t2 = (tp-2*t0+tm)/ep**2
+
+    sighat = np.sqrt(np.sum(t1**2))/n
+    a = (np.sum(t1**3))/(6*n**3*sighat**3)
+    delta = t1/(n**2*sighat)
+    cq = (statfunction(*tdata, weights=p0+ep*delta)-2*t0+statfunction(
+        *tdata, weights=p0-ep*delta))/(2*sighat*ep**2)
+    bhat = np.sum(t2)/(2*n**2)
+    curv = bhat/sighat-cq
+    z0 = nppf(2*ncdf(a)*ncdf(-curv))
+    Z = z0+nppf(alphas)
+    za = Z/(1-a*Z)**2
+    # stan = t0 + sighat * nppf(alphas)
+    abc = np.zeros_like(alphas)
+    for i in range(0, len(alphas)):
+        abc[i] = statfunction(*tdata, weights=p0+za[i]*delta)
+
+    if output == 'lowhigh':
+        return abc
+    elif output == 'errorbar':
+        return abs(abc-statfunction(tdata))[np.newaxis].T
+
+    raise ValueError("Output option {0} is not supported.".format(output))
 
 
+def _avals_bca(tdata, statfunction, stat, alphas, n_samples):
+    # The value of the statistic function applied just to the actual data.
+    ostat = statfunction(*tdata)
+
+    # The bias correction value.
+    z0 = nppf((1.0*np.sum(stat < ostat, axis=0)) / n_samples)
+
+    # Statistics of the jackknife distribution
+    jackindexes = jackknife_indexes(tdata[0])
+    jstat = [statfunction(*(x[indexes] for x in tdata))
+             for indexes in jackindexes]
+    jmean = np.mean(jstat, axis=0)
+
+    # Temporarily kill numpy warnings:
+    oldnperr = np.seterr(invalid='ignore')
+    # Acceleration value
+    a = np.sum((jmean - jstat)**3, axis=0) / (
+        6.0 * np.sum((jmean - jstat)**2, axis=0)**1.5)
+    if np.any(np.isnan(a)):
+        nanind = np.nonzero(np.isnan(a))
+        warnings.warn("BCa acceleration values for indexes {} were undefined. \
+Statistic values were likely all equal. Affected CI will \
+be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
+
+    zs = z0 + nppf(alphas).reshape(alphas.shape+(1,)*z0.ndim)
+
+    avals = ncdf(z0 + zs/(1-a*zs))
+    np.seterr(**oldnperr)
+
+    return avals
 
 def bootstrap_indexes(data: np.ndarray, n_samples: int=10000):
     """

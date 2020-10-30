@@ -58,15 +58,6 @@ class test_ci():
                           method='abc')
         np.testing.assert_array_almost_equal(
             results, np.array([0.20982275, 1.20374686]))
-
-    def test_abc_multialpha_unified_noiter(self):
-        results = boot.ci(self.data,
-                          lambda x, weights:
-                          np.average(x, weights=weights, axis=-1),
-                          alpha=(0.1, 0.2, 0.8, 0.9), method='abc', _iter=False)
-        np.testing.assert_array_almost_equal(
-            results,
-            np.array([0.39472915, 0.51161304, 0.93789723, 1.04407254]))
     
     def test_abc_multialpha_defaultstat(self):
         results = boot.ci(self.data, alpha=(0.1,0.2,0.8,0.9), method='abc')
@@ -104,12 +95,6 @@ class test_ci():
         results = boot.ci(self.data, alpha=(0.1, 0.2, 0.8, 0.9))
         np.testing.assert_array_almost_equal(results, np.array(
             [0.39210727, 0.50775386, 0.93673299, 1.0476729]))
-
-    def test_bca_multialpha_noiter(self):
-        np.random.seed(1234567890)
-        results = boot.ci(self.data, alpha=(0.1, 0.2, 0.8, 0.9), _iter=False)
-        np.testing.assert_array_almost_equal(
-            results, np.array([0.39210727, 0.50775386, 0.93673299, 1.0476729]))
         
     def test_bca_multi_multialpha(self):
         np.random.seed(1234567890)

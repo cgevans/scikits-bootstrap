@@ -31,12 +31,6 @@ ncdf = np.vectorize(_ncdf_py, [np.float])
 
 __version__ = '1.1.0.dev1'
 
-# Keep python 2/3 compatibility, without using six. At some point,
-# we may need to add six as a requirement, but right now we can avoid it.
-if 'xrange' not in globals():
-    xrange = range
-
-
 class InstabilityWarning(UserWarning):
     """Issued when results may be unstable."""
 
@@ -52,8 +46,7 @@ def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray],
        alpha:Union[float,Iterable[float]]=0.05, n_samples:int=10000,
        method: Literal['pi','bca','abc']='bca',
        output: Literal['lowhigh','errorbar']='lowhigh',
-       epsilon:float=0.001, multi: Literal[None, False, True]=None,
-       _iter: bool=True):
+       epsilon:float=0.001, multi: Literal[None, False, True]=None):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -162,12 +155,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         tdata = (ndata,)
 
     if statfunction is None:
-        if _iter:
-            statfunction = np.average
-        else:
-            def statfunc_wrapper(x, *args, **kwargs):
-                return np.average(x, axis=-1, *args, **kwargs)
-            statfunction = statfunc_wrapper
+        statfunction = np.average
     elif not callable(statfunction):
         # Ensure that the statfunction is actually a callable, handling
         # the confusion where someone passes a *return value* of a function
@@ -228,13 +216,9 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # We don't need to generate actual samples; that would take more memory.
     # Instead, we can generate just the indexes, and then apply the statfun
     # to those indexes.
-    if _iter:
-        bootindexes = bootstrap_indexes(tdata[0], n_samples)
-        stat = np.array([statfunction(*(x[indexes] for x in tdata))
-                         for indexes in bootindexes])
-    else:
-        bootindexes = _bootstrap_indexes_array(tdata[0], n_samples)
-        stat = statfunction(*(x[bootindexes] for x in tdata))
+    bootindexes = bootstrap_indexes(tdata[0], n_samples)
+    stat = np.array([statfunction(*(x[indexes] for x in tdata))
+                        for indexes in bootindexes])
 
     stat.sort(axis=0)
 
@@ -317,12 +301,8 @@ Given data points data, where axis 0 is considered to delineate points, return
 an generator for sets of bootstrap indexes. This can be used as a list
 of bootstrap indexes (with list(bootstrap_indexes(data))) as well.
     """
-    for _ in xrange(n_samples):
+    for _ in range(n_samples):
         yield randint(data.shape[0], size=(data.shape[0],))
-
-
-def _bootstrap_indexes_array(data: np.ndarray, n_samples: int=10000):
-    return randint(data.shape[0], size=(n_samples, data.shape[0]))
 
 
 def jackknife_indexes(data: np.ndarray):
@@ -387,7 +367,7 @@ around to the beginning of the data again.
     else:
         last_block = n_obs - block_length
 
-    for _ in xrange(n_samples):
+    for _ in range(n_samples):
         blocks = np.random.randint(0, last_block, size=n_blocks)
         if not wrap:
             yield (blocks[:, None]+nexts).ravel()[:n_obs]

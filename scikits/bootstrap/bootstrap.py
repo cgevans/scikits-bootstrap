@@ -50,7 +50,7 @@ def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray],
        alpha:Union[float,Iterable[float]]=0.05, n_samples:int=10000,
        method: Literal['pi','bca','abc']='bca',
        output: Literal['lowhigh','errorbar']='lowhigh',
-       epsilon:float=0.001, multi: Literal[None, False, True]=None):
+       epsilon:float=0.001, multi: Literal[None, False, True, 'indepedent']=None):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -154,6 +154,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # but pandas seems much much slower and the indices become a problem.
     if multi and isinstance(data, Iterable):
         tdata = tuple( np.array(x) for x in data )
+        lengths = [x.shape[0] for x in tdata]
+        if (len(np.unique(lengths)) > 1) and multi != 'independent':
+            raise ValueError("Data arrays have differing lengths {}, and ".format(lengths) + 
+                "multi is not set to 'independent'.")
     else:
         tdata = (np.array(data),)
 
@@ -173,20 +177,23 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
                         "parentheses.")
 
     if method == 'abc':
-        return _ci_abc(tdata, statfunction, epsilon, alphas, output)
+        return _ci_abc(tdata, statfunction, epsilon, alphas, output, multi)
 
-    # We don't need to generate actual samples; that would take more memory.
-    # Instead, we can generate just the indices, and then apply the statfun
-    # to those indices.
-    bootindices = bootstrap_indices(tdata[0], n_samples)
-    stat = np.array([statfunction(*(x[indices] for x in tdata))
-                        for indices in bootindices])
+    if multi != 'independent':
+        bootindices = bootstrap_indices(tdata[0], n_samples)
+        stat = np.array([statfunction(*(x[indices] for x in tdata))
+                            for indices in bootindices])
+    else:
+        bootindices = bootstrap_indices_independent(tdata, n_samples)
+        stat = np.array([statfunction(*(x[i] for x, i in zip(tdata, indices)))
+            for indices in bootindices])
     stat.sort(axis=0)
+
 
     if method == 'pi':     # Percentile Interval Method
         avals = alphas
     elif method == 'bca':     # Bias-Corrected Accelerated Method
-        avals = _avals_bca(tdata, statfunction, stat, alphas, n_samples)
+        avals = _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi)
     else:
         raise ValueError("Method {0} is not supported.".format(method))
 
@@ -224,7 +231,9 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
     raise ValueError("Output option {0} is not supported.".format(output))
 
-def _ci_abc(tdata, statfunction, epsilon, alphas, output):
+def _ci_abc(tdata, statfunction, epsilon, alphas, output, multi):
+    if multi == 'independent':
+        raise ValueError("multi='independent' is not currently supported for ABC.")
     n = tdata[0].shape[0]*1.0
     nn = tdata[0].shape[0]
 
@@ -269,7 +278,7 @@ def _ci_abc(tdata, statfunction, epsilon, alphas, output):
     raise ValueError("Output option {0} is not supported.".format(output))
 
 
-def _avals_bca(tdata, statfunction, stat, alphas, n_samples):
+def _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi):
     # The value of the statistic function applied just to the actual data.
     ostat = statfunction(*tdata)
 
@@ -277,11 +286,17 @@ def _avals_bca(tdata, statfunction, stat, alphas, n_samples):
     z0 = nppf((1.0*np.sum(stat < ostat, axis=0)) / n_samples)
 
     # Statistics of the jackknife distribution
-    jackindices = jackknife_indices(tdata[0])
-    jstat = [statfunction(*(x[indices] for x in tdata))
-             for indices in jackindices]
-    jmean = np.mean(jstat, axis=0)
+    if multi != 'independent':
+        jackindices = jackknife_indices(tdata[0])
+        jstat = [statfunction(*(x[indices] for x in tdata))
+                for indices in jackindices]
+    else:
+        jackindices = jackknife_indices_independent(tdata)
+        jstat = np.array([statfunction(*(x[i] for x, i in zip(tdata, indices)))
+            for indices in jackindices])
 
+
+    jmean = np.mean(jstat, axis=0)
     # Temporarily kill numpy warnings:
     oldnperr = np.seterr(invalid='ignore')
     # Acceleration value
@@ -309,7 +324,7 @@ of bootstrap indices (with list(bootstrap_indices(data))) as well.
     for _ in range(n_samples):
         yield randint(data.shape[0], size=(data.shape[0],))
 
-def bootstrap_indices_independent(data: Tuple[np.ndarray], n_samples: int=10000):
+def bootstrap_indices_independent(data: Tuple[np.ndarray, ...], n_samples: int=10000):
     for _ in range(n_samples):
         yield tuple(randint(x.shape[0], size=(x.shape[0],)) for x in data)
 
@@ -324,6 +339,12 @@ Y with the ith data point deleted.
     """
     base = np.arange(0,len(data))
     return (np.delete(base,i) for i in base)
+
+def jackknife_indices_independent(data: Tuple[np.ndarray, ...]):
+    base = [np.arange(0, len(x)) for x in data]
+    for i, b in enumerate(base):
+        for j in base[i]:
+            yield tuple(base[0:i] + [np.delete(b, j)] + base[i+1:])
 
 def subsample_indices(data: np.ndarray, n_samples: int=1000, size: float=0.5):
     """

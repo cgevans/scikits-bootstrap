@@ -4,21 +4,25 @@ sudo: false
 matrix:
   include:
     # "Recommended" environments: More recent versions, for Py2 and Py3.
-    - python: "2.7"
-      env: DEPS="numpy scipy"
     - python: "3.5"
-      env: DEPS="numpy scipy"
-    - python: "3.6"
-      env: DEPS="numpy scipy"
-    - python: "3.7"
-      env: DEPS="numpy scipy"
-    - python: "3.7"
-      env: DEPS="numpy scipy pandas"
-    - python: "pypy2"
       env: DEPS="numpy"
+    - python: "3.6"
+      env: DEPS="numpy"
+    - python: "3.7"
+      env: DEPS="numpy"
+    - python: "3.7"
+      env: DEPS="numpy pandas"
+    - python: "3.8"
+      env: DEPS="numpy"
+    - python: "3.8"
+      env: DEPS="numpy pandas"
+    - python: "3.9"
+      env: DEPS="numpy"
+    - python: "3.9"
+      env: DEPS="numpy pandas"
     - python: "pypy3"
       env: DEPS="numpy"
-dist: bionic
+#dist: bionic
 
 install:
   - travis_retry pip install --upgrade pip setuptools wheel

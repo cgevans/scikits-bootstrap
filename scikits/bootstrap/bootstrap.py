@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
-from numpy.random import randint
 from math import ceil, sqrt
+from typing import Union, Literal, Callable, Any, Optional, Tuple, Iterable
+import warnings
+from numpy.random import randint
 import numpy as np
 import pyerf
-import warnings
+
+
+
 
 s2 = sqrt(2)
 
@@ -21,13 +25,11 @@ nppf = np.vectorize(_nppf_py, [np.float])
 ncdf = np.vectorize(_ncdf_py, [np.float])
 
 
-__version__ = '1.0.0'
+__version__ = '1.1.0.dev1'
 
 # Keep python 2/3 compatibility, without using six. At some point,
 # we may need to add six as a requirement, but right now we can avoid it.
-try:
-    xrange
-except NameError:
+if 'xrange' not in globals():
     xrange = range
 
 
@@ -39,10 +41,13 @@ class InstabilityWarning(UserWarning):
 # On import, make sure that InstabilityWarnings are not filtered out.
 warnings.simplefilter('always', InstabilityWarning)
 
+StatFunctionType = Callable[..., Any]
+DataType = Union[Tuple[np.ndarray, ...], np.ndarray]
 
-def ci(data, statfunction=None, alpha=0.05, n_samples=10000,
-       method='bca', output='lowhigh', epsilon=0.001, multi=None,
-       _iter=True):
+def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray], statfunction:Optional[StatFunctionType]=None, alpha:Union[float,Iterable[float]]=0.05, n_samples:int=10000,
+       method: Literal['pi','bca','abc']='bca', output: Literal['lowhigh','errorbar']='lowhigh', 
+       epsilon:float=0.001, multi: Literal[None, False, True]=None,
+       _iter: bool=True):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -134,16 +139,24 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     """
 
     # Deal with the alpha values
-    if np.iterable(alpha):
+    if isinstance(alpha, Iterable):
         alphas = np.array(alpha)
     else:
         alphas = np.array([alpha/2, 1-alpha/2])
 
     if multi is None:
-        if isinstance(data, tuple):
+        if isinstance(data, Tuple):
             multi = True
         else:
             multi = False
+
+    # Ensure that the data is actually an array. This isn't nice to pandas,
+    # but pandas seems much much slower and the indexes become a problem.
+    if multi and isinstance(data, Iterable):
+        tdata = tuple( np.array(x) for x in data )
+    else:
+        ndata = np.array(data)
+        tdata = (ndata,)
 
     if statfunction is None:
         if _iter:
@@ -164,14 +177,6 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
                         "If your function doesn't need any arguments other than the data, " +
                         "you can alternatively use statfunction=myfunction (without " +
                         "parentheses.")
-        
-    # Ensure that the data is actually an array. This isn't nice to pandas,
-    # but pandas seems much much slower and the indexes become a problem.
-    if not multi:
-        data = np.array(data)
-        tdata = (data,)
-    else:
-        tdata = tuple( np.array(x) for x in data )
 
     # Deal with ABC *now*, as it doesn't need samples.
     if method == 'abc':
@@ -185,7 +190,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         try:
             t0 = statfunction(*tdata,weights=p0)
         except TypeError as e:
-            raise TypeError("statfunction does not accept correct arguments for ABC ({0})".format(e.message))
+            raise TypeError("statfunction does not accept correct arguments for ABC ({0})".format(e))
 
         di_full = I - p0
         tp = np.fromiter((statfunction(*tdata, weights=p0+ep*di)
@@ -304,7 +309,7 @@ be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
     
 
 
-def bootstrap_indexes(data, n_samples=10000):
+def bootstrap_indexes(data: np.ndarray, n_samples: int=10000):
     """
 Given data points data, where axis 0 is considered to delineate points, return
 an generator for sets of bootstrap indexes. This can be used as a list
@@ -314,11 +319,11 @@ of bootstrap indexes (with list(bootstrap_indexes(data))) as well.
         yield randint(data.shape[0], size=(data.shape[0],))
 
         
-def bootstrap_indexes_array(data, n_samples=10000):
+def bootstrap_indexes_array(data: np.ndarray, n_samples: int=10000):
     return randint(data.shape[0], size=(n_samples, data.shape[0]))
 
 
-def jackknife_indexes(data):
+def jackknife_indexes(data: np.ndarray):
     """
 Given data points data, where axis 0 is considered to delineate points, return
 a list of arrays where each array is a set of jackknife indexes.
@@ -329,7 +334,7 @@ Y with the ith data point deleted.
     base = np.arange(0,len(data))
     return (np.delete(base,i) for i in base)
 
-def subsample_indexes(data, n_samples=1000, size=0.5):
+def subsample_indexes(data: np.ndarray, n_samples: int=1000, size: float=0.5):
     """
 Given data points data, where axis 0 is considered to delineate points, return
 a list of arrays where each array is indexes a subsample of the data of size
@@ -351,8 +356,8 @@ samples)
     return base[:,0:size]
 
 
-def bootstrap_indexes_moving_block(data, n_samples=10000,
-                                   block_length=3, wrap=False):
+def bootstrap_indexes_moving_block(data: np.ndarray, n_samples: int=10000,
+                                   block_length: int=3, wrap: bool=False):
     """Generate moving-block bootstrap samples.
 
 Given data points `data`, where axis 0 is considered to delineate points,
@@ -389,7 +394,9 @@ around to the beginning of the data again.
             yield np.mod((blocks[:, None]+nexts).ravel()[:n_obs], n_obs)
 
 
-def pval(data, statfunction=np.average, compfunction=lambda s: s > 0, n_samples=10000, multi=None):
+def pval(data: DataType, statfunction:StatFunctionType=np.average, 
+         compfunction:Callable[[Any], bool]=lambda s: s > 0, n_samples:int=10000, 
+         multi:Optional[bool]=None):
     """
 Given a set of data ``data``, a statistics function ``statfunction`` that
 applies to that data, and the criteriafunction ``compfunction``, computes the bootstrap probability that

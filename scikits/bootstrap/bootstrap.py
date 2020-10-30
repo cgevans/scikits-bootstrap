@@ -260,7 +260,7 @@ def _ci_abc(tdata, statfunction, epsilon, alphas, output):
     if output == 'lowhigh':
         return abc
     elif output == 'errorbar':
-        return abs(abc-statfunction(tdata))[np.newaxis].T
+        return abs(abc-statfunction(*tdata))[np.newaxis].T
 
     raise ValueError("Output option {0} is not supported.".format(output))
 

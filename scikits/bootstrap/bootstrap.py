@@ -5,7 +5,11 @@ lies satisfies some criteria, e.g. lies in some interval."""
 from __future__ import absolute_import, division, print_function
 
 from math import ceil, sqrt
-from typing import Union, Literal, Callable, Any, Optional, Tuple, Iterable
+try:
+    from typing import Union, Literal, Callable, Any, Optional, Tuple, Iterable
+except:
+    from typing_extensions import Literal, Callable, Tuple
+    from typing import Union, Iterable, Any, Optional
 import warnings
 from numpy.random import randint
 import numpy as np

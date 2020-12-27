@@ -33,7 +33,7 @@ nppf = np.vectorize(_nppf_py, [np.float])
 ncdf = np.vectorize(_ncdf_py, [np.float])
 
 
-__version__ = '1.1.0.dev1'
+__version__ = '1.1.0.dev2'
 
 class InstabilityWarning(UserWarning):
     """Issued when results may be unstable."""
@@ -50,7 +50,7 @@ def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray],
        alpha:Union[float,Iterable[float]]=0.05, n_samples:int=10000,
        method: Literal['pi','bca','abc']='bca',
        output: Literal['lowhigh','errorbar']='lowhigh',
-       epsilon:float=0.001, multi: Literal[None, False, True, 'indepedent']=None):
+       epsilon:float=0.001, multi: Literal[None, False, True, 'independent', 'linked']=None):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -90,10 +90,28 @@ output: string, optional
 epsilon: float, optional (only for ABC method)
     The step size for finite difference calculations in the ABC method. Ignored for
     all other methods. (default=0.001)
-multi: boolean, optional
-    If False, assume data is a single array. If True, assume data is a tuple/other
-    iterable of arrays of the same length that should be sampled together. If None,
-    decide based on whether the data is an actual tuple. (default=None)
+multi: boolean or string, optional
+    If False, assume data is a single array. If True or "linked", 
+    assume data is a tuple/other iterable of arrays of the same length that 
+    should be sampled together (eg, values in each array at a particular index are
+    linked in some way). If None, decide based on whether the data is an 
+    actual tuple.  If "independent", sample the tuple of arrays separately. 
+    For True/"linked", each array must be the same length. (default=None)
+
+    An example of a situation where True/"linked" might be useful is if you have
+    an array of x points and an array of y points, and want confidence intervals
+    on a linear fit, eg `boot.ci((x,y), lambda a,b: np.polyfit(a,b,1), multi="linked").
+    In this case, the statistic function needs to have samples that preserve the links
+    between values in x and y in order for the fit to make sense.  This is equivalent
+    to running boot.ci on an Nx2 array.
+
+    An example of where "independent" might be useful is if you have an array of values
+    x and an array of values y, and you want a confidence interval for the difference
+    of the averages of the values in each, eg 
+    `boot.ci((x,y), lambda a,b: np.average(a)-np.average(b), multi="independent")`.
+    Here, you don't care about maintaining the link between each value in x and y, and
+    treat them separately.  This is equivalent to taking bootstrap samples of x and
+    y separately, and then running the statistic function on those bootstrap samples.
 
 Returns
 -------
@@ -146,6 +164,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         alphas = np.array(alpha)
     else:
         alphas = np.array([alpha/2, 1-alpha/2])
+
+    # Actually check multi value:
+    if multi not in [False, True, None, "independent", "linked", "dependent"]:
+        raise ValueError(f"Value `{multi}` for multi is not recognized.")
 
     if multi is None:
         multi = bool(isinstance(data, Tuple))

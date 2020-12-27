@@ -2,7 +2,7 @@ from __future__ import division
 
 import scikits.bootstrap as boot
 import numpy as np
-from numpy.testing import dec
+from numpy.testing import dec, assert_raises
 
 
 try:
@@ -20,6 +20,7 @@ class test_ci():
                             1.05986776,  2.14408873, -1.43464512,  2.28743654,  0.42864858])
         self.x = [1,2,3,4,5,6]
         self.y = [2,1,2,5,1,2]
+        self.z = [2,1,1,-1,-1,-4,-8]
         if not no_pandas:
             self.pds = pandas.Series(self.data,index=np.arange(50,70))
 
@@ -103,6 +104,9 @@ class test_ci():
         results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1), alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
         np.testing.assert_array_almost_equal(results1,results2)
 
+    def test_bca_multi_indep(self):
+        results1 = boot.ci((self.x, self.z), lambda a,b: np.average(a) - np.average(b), n_samples=1000, multi='independent')
+
     def test_bca_multi_2dout_multialpha(self):
         np.random.seed(1234567890)
         results1 = boot.ci((self.x,self.y), lambda a,b: np.polyfit(a,b,1), alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
@@ -112,6 +116,11 @@ class test_ci():
         results3 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
         np.testing.assert_array_almost_equal(results1[:,0],results2)
         np.testing.assert_array_almost_equal(results1[:,1],results3)
+
+    def test_multi_fail(self):
+        assert_raises(ValueError,
+        boot.ci,
+        (self.x,self.z), lambda a,b: np.average(a) - np.average(b), n_samples=1000, multi='indepedent')
 
     def test_pi_multi_2dout_multialpha(self):
         np.random.seed(1234567890)

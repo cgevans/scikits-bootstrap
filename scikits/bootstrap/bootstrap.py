@@ -50,7 +50,7 @@ def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray],
        alpha:Union[float,Iterable[float]]=0.05, n_samples:int=10000,
        method: Literal['pi','bca','abc']='bca',
        output: Literal['lowhigh','errorbar']='lowhigh',
-       epsilon:float=0.001, multi: Literal[None, False, True, 'independent', 'linked']=None):
+       epsilon:float=0.001, multi: Literal[None, False, True, 'independent', 'paired']=None):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -91,16 +91,16 @@ epsilon: float, optional (only for ABC method)
     The step size for finite difference calculations in the ABC method. Ignored for
     all other methods. (default=0.001)
 multi: boolean or string, optional
-    If False, assume data is a single array. If True or "linked", 
+    If False, assume data is a single array. If True or "paired", 
     assume data is a tuple/other iterable of arrays of the same length that 
     should be sampled together (eg, values in each array at a particular index are
     linked in some way). If None, decide based on whether the data is an 
     actual tuple.  If "independent", sample the tuple of arrays separately. 
-    For True/"linked", each array must be the same length. (default=None)
+    For True/"paired", each array must be the same length. (default=None)
 
-    An example of a situation where True/"linked" might be useful is if you have
+    An example of a situation where True/"paired" might be useful is if you have
     an array of x points and an array of y points, and want confidence intervals
-    on a linear fit, eg `boot.ci((x,y), lambda a,b: np.polyfit(a,b,1), multi="linked").
+    on a linear fit, eg `boot.ci((x,y), lambda a,b: np.polyfit(a,b,1), multi="paired").
     In this case, the statistic function needs to have samples that preserve the links
     between values in x and y in order for the fit to make sense.  This is equivalent
     to running boot.ci on an Nx2 array.
@@ -166,8 +166,8 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         alphas = np.array([alpha/2, 1-alpha/2])
 
     # Actually check multi value:
-    if multi not in [False, True, None, "independent", "linked", "dependent"]:
-        raise ValueError(f"Value `{multi}` for multi is not recognized.")
+    if multi not in [False, True, None, "independent", "paired"]:
+        raise ValueError("Value `{}` for multi is not recognized.".format(multi))
 
     if multi is None:
         multi = bool(isinstance(data, Tuple))

@@ -50,7 +50,9 @@ def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray],
        alpha:Union[float,Iterable[float]]=0.05, n_samples:int=10000,
        method: Literal['pi','bca','abc']='bca',
        output: Literal['lowhigh','errorbar']='lowhigh',
-       epsilon:float=0.001, multi: Literal[None, False, True, 'independent', 'paired']=None):
+       epsilon:float=0.001,
+       multi: Literal[None, False, True, 'independent', 'paired']=None,
+       return_dist: Literal[False, True]=False):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -91,11 +93,11 @@ epsilon: float, optional (only for ABC method)
     The step size for finite difference calculations in the ABC method. Ignored for
     all other methods. (default=0.001)
 multi: boolean or string, optional
-    If False, assume data is a single array. If True or "paired", 
-    assume data is a tuple/other iterable of arrays of the same length that 
+    If False, assume data is a single array. If True or "paired",
+    assume data is a tuple/other iterable of arrays of the same length that
     should be sampled together (eg, values in each array at a particular index are
-    linked in some way). If None, decide based on whether the data is an 
-    actual tuple.  If "independent", sample the tuple of arrays separately. 
+    linked in some way). If None, decide based on whether the data is an
+    actual tuple.  If "independent", sample the tuple of arrays separately.
     For True/"paired", each array must be the same length. (default=None)
 
     An example of a situation where True/"paired" might be useful is if you have
@@ -107,16 +109,21 @@ multi: boolean or string, optional
 
     An example of where "independent" might be useful is if you have an array of values
     x and an array of values y, and you want a confidence interval for the difference
-    of the averages of the values in each, eg 
+    of the averages of the values in each, eg
     `boot.ci((x,y), lambda a,b: np.average(a)-np.average(b), multi="independent")`.
     Here, you don't care about maintaining the link between each value in x and y, and
     treat them separately.  This is equivalent to taking bootstrap samples of x and
     y separately, and then running the statistic function on those bootstrap samples.
+return_dist: boolean, optional
+    Whether to return the bootstrap distribution along with the confidence
+    intervals. Defaults to ``False``.
 
 Returns
 -------
 confidences: tuple of floats
     The confidence percentiles specified by alpha
+stat: array
+    Bootstrap distribution. Returned only if ``return_dist=True``.
 
 Calculation Methods
 -------------------
@@ -178,7 +185,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         tdata = tuple( np.array(x) for x in data )
         lengths = [x.shape[0] for x in tdata]
         if (len(np.unique(lengths)) > 1) and multi != 'independent':
-            raise ValueError("Data arrays have differing lengths {}, and ".format(lengths) + 
+            raise ValueError("Data arrays have differing lengths {}, and ".format(lengths) +
                 "multi is not set to 'independent'.")
     else:
         tdata = (np.array(data),)
@@ -241,17 +248,25 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     if output == 'lowhigh':
         if nvals.ndim == 1:
             # All nvals are the same. Simple broadcasting
-            return stat[nvals]
-        # Nvals are different for each data point. Not simple broadcasting.
-        # Each set of nvals along axis 0 corresponds to the data at the same
-        # point in other axes.
-        return stat[(nvals, np.indices(nvals.shape)[1:].squeeze())]
+            out = stat[nvals]
+        else:
+            # Nvals are different for each data point. Not simple broadcasting.
+            # Each set of nvals along axis 0 corresponds to the data at the same
+            # point in other axes.
+            out = stat[(nvals, np.indices(nvals.shape)[1:].squeeze())]
     elif output == 'errorbar':
         if nvals.ndim == 1:
-            return abs(statfunction(*tdata)-stat[nvals])[np.newaxis].T
-        return abs(statfunction(*tdata)-stat[(nvals, np.indices(nvals.shape)[1:])])[np.newaxis].T
+            out = abs(statfunction(*tdata)-stat[nvals])[np.newaxis].T
+        else:
+            out = abs(statfunction(*tdata)-stat[(nvals, np.indices(nvals.shape)[1:])])[np.newaxis].T
+    else:
+        raise ValueError("Output option {0} is not supported.".format(output))
 
-    raise ValueError("Output option {0} is not supported.".format(output))
+    if return_dist:
+        return out, stat
+    else:
+        return out
+
 
 def _ci_abc(tdata, statfunction, epsilon, alphas, output, multi):
     if multi == 'independent':
@@ -346,9 +361,15 @@ of bootstrap indices (with list(bootstrap_indices(data))) as well.
     for _ in range(n_samples):
         yield randint(data.shape[0], size=(data.shape[0],))
 
+<<<<<<< HEAD
 def bootstrap_indices_independent(data: Tuple[np.ndarray, ...], n_samples: int=10000):
     for _ in range(n_samples):
         yield tuple(randint(x.shape[0], size=(x.shape[0],)) for x in data)
+=======
+
+def bootstrap_indexes_array(data, n_samples=10000):
+    return randint(data.shape[0], size=(n_samples, data.shape[0]))
+>>>>>>> ENH: allow to return bootstrap distribution
 
 
 def jackknife_indices(data: np.ndarray):
@@ -419,7 +440,11 @@ around to the beginning of the data again.
     else:
         last_block = n_obs - block_length
 
+<<<<<<< HEAD
     for _ in range(n_samples):
+=======
+    for _ in xrange(n_samples):
+>>>>>>> ENH: allow to return bootstrap distribution
         blocks = np.random.randint(0, last_block, size=n_blocks)
         if not wrap:
             yield (blocks[:, None]+nexts).ravel()[:n_obs]

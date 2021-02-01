@@ -361,15 +361,9 @@ of bootstrap indices (with list(bootstrap_indices(data))) as well.
     for _ in range(n_samples):
         yield randint(data.shape[0], size=(data.shape[0],))
 
-<<<<<<< HEAD
 def bootstrap_indices_independent(data: Tuple[np.ndarray, ...], n_samples: int=10000):
     for _ in range(n_samples):
         yield tuple(randint(x.shape[0], size=(x.shape[0],)) for x in data)
-=======
-
-def bootstrap_indexes_array(data, n_samples=10000):
-    return randint(data.shape[0], size=(n_samples, data.shape[0]))
->>>>>>> ENH: allow to return bootstrap distribution
 
 
 def jackknife_indices(data: np.ndarray):
@@ -440,11 +434,7 @@ around to the beginning of the data again.
     else:
         last_block = n_obs - block_length
 
-<<<<<<< HEAD
     for _ in range(n_samples):
-=======
-    for _ in xrange(n_samples):
->>>>>>> ENH: allow to return bootstrap distribution
         blocks = np.random.randint(0, last_block, size=n_blocks)
         if not wrap:
             yield (blocks[:, None]+nexts).ravel()[:n_obs]

@@ -6,14 +6,26 @@ from __future__ import absolute_import, division, print_function
 
 from math import ceil, sqrt
 try:
-    from typing import Union, Literal, Callable, Any, Optional, Tuple, Iterable
+    from typing import Union, Literal, Callable, Any, Optional, Tuple, Iterable, List
 except:
     from typing_extensions import Literal, Callable, Tuple
-    from typing import Union, Iterable, Any, Optional
+    from typing import Union, Iterable, Any, Optional, List
 import warnings
 from numpy.random import randint
 import numpy as np
 import pyerf
+
+try:
+    from numba import njit, prange
+except:
+    def njit(parallel, fastmath):
+        def decorator(func):
+            return func
+
+        return decorator
+
+
+    prange = range
 
 
 
@@ -202,9 +214,11 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         return _ci_abc(tdata, statfunction, epsilon, alphas, output, multi)
 
     if multi != 'independent':
-        bootindices = bootstrap_indices(tdata[0], n_samples)
-        stat = np.array([statfunction(*(x[indices] for x in tdata))
-                            for indices in bootindices])
+        if statfunction in (np.average, np.mean) and len(tdata) == 1:
+            stat = _calculate_boostrap_mean_stat(tdata[0], n_samples)
+        else:
+            rng = np.random.default_rng()
+            stat = np.array([statfunction(*(rng.choice(x, tdata[0].shape[0]) for x in tdata)) for _ in range(n_samples)])
     else:
         bootindices = bootstrap_indices_independent(tdata, n_samples)
         stat = np.array([statfunction(*(x[i] for x, i in zip(tdata, indices)))
@@ -309,9 +323,12 @@ def _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi):
 
     # Statistics of the jackknife distribution
     if multi != 'independent':
-        jackindices = jackknife_indices(tdata[0])
-        jstat = [statfunction(*(x[indices] for x in tdata))
-                for indices in jackindices]
+        if statfunction in (np.average, np.mean) and len(tdata) == 1:
+            jstat = _calculate_jackknife_mean_stat(tdata[0]).tolist()
+        else:
+            jstat = []
+            for i in np.arange(0, len(tdata[0])):
+                jstat.append(statfunction(*(np.concatenate((x[:i], x[i + 1:])) for x in tdata)))
     else:
         jackindices = jackknife_indices_independent(tdata)
         jstat = np.array([statfunction(*(x[i] for x, i in zip(tdata, indices)))
@@ -336,6 +353,28 @@ be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
     np.seterr(**oldnperr)
 
     return avals
+
+
+@njit(parallel=True, fastmath=True)
+def _calculate_jackknife_mean_stat(data: np.ndarray) -> np.ndarray:
+    n = data.shape[0]
+    jstat = np.zeros(n)
+    sum = data.sum()
+    for i in prange(n):
+        # Alternative solution, which can be used when we want use custom stat function
+        # jstat[i] = np.concatenate((data[:i], data[i+1:])).mean()
+        jstat[i] = (sum - data[i]) / (n - 1)
+    return jstat
+
+
+@njit(parallel=True, fastmath=True)
+def _calculate_boostrap_mean_stat(data: np.ndarray, n_samples: int) -> np.ndarray:
+    n = data.shape[0]
+    stat = np.zeros(n_samples)
+    for i in prange(n_samples):
+        stat[i] = np.random.choice(data, n).mean()
+    return stat
+
 
 def bootstrap_indices(data: np.ndarray, n_samples: int=10000):
     """

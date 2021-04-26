@@ -116,7 +116,8 @@ multi: boolean or string, optional
     y separately, and then running the statistic function on those bootstrap samples.
 return_dist: boolean, optional
     Whether to return the bootstrap distribution along with the confidence
-    intervals. Defaults to ``False``.
+    intervals. Defaults to ``False``.  Note that, as the 'abc' method does not actually
+    calculate the bootstrap distribution, `method='abc'` conflicts with `return_dist=True`.
 
 Returns
 -------
@@ -206,6 +207,9 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
                         "parentheses.")
 
     if method == 'abc':
+        if return_dist:
+            raise ValueError("The ABC method is being used, but return_dist=True. The distribution cannot be" +
+                             "returned in this case, because the ABC method doesn't actually calculate it.")
         return _ci_abc(tdata, statfunction, epsilon, alphas, output, multi)
 
     if multi != 'independent':

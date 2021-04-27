@@ -69,7 +69,7 @@ def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray],
        multi: Literal[None, False, True, 'independent', 'paired'] = None,
        return_dist: Literal[False, True] = False,
        seed=None,
-       _use_numba:bool = False):
+       _use_numba: bool = False):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -235,7 +235,8 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
     if multi != 'independent':
         if statfunction in (np.average, np.mean) and len(tdata) == 1 and NUMBA_AVAILABLE and _use_numba:
-            numba_seed = int(rng.integers(1_000_000_000)) # FIXME: better than nothing for now
+            # FIXME: better than nothing for now
+            numba_seed = int(rng.integers(1_000_000))
             # Numba doesn't support generators.
             stat = _calculate_boostrap_mean_stat(tdata[0], n_samples, seed=numba_seed)
         else:
@@ -401,12 +402,11 @@ def _calculate_jackknife_mean_stat(data: np.ndarray) -> np.ndarray:
 
 @njit(parallel=True, fastmath=True)
 def _calculate_boostrap_mean_stat(data: np.ndarray, n_samples: int, seed=None) -> np.ndarray:
-    if seed is not None:
-        np.random.seed(seed)
-    np.random.seed(10)
     n = data.shape[0]
     stat = np.zeros(n_samples)
     for i in prange(n_samples):
+        if seed is not None:
+            np.random.seed(seed + i)  # FIXME
         stat[i] = np.random.choice(data, n).mean()
     return stat
 

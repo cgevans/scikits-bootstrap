@@ -17,17 +17,18 @@ import pyerf
 
 try:
     from numba import njit, prange
+
+    NUMBA_AVAILABLE = True
 except:
+    NUMBA_AVAILABLE = False
+
     def njit(parallel, fastmath):
         def decorator(func):
             return func
 
         return decorator
 
-
     prange = range
-
-
 
 
 s2 = sqrt(2)
@@ -47,6 +48,7 @@ ncdf = np.vectorize(_ncdf_py, [np.float])
 
 __version__ = '1.1.0.dev2'
 
+
 class InstabilityWarning(UserWarning):
     """Issued when results may be unstable."""
 
@@ -57,15 +59,17 @@ warnings.simplefilter('always', InstabilityWarning)
 StatFunctionType = Callable[..., Any]
 DataType = Union[Tuple[np.ndarray, ...], np.ndarray]
 
+
 def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray],
-       statfunction:Optional[StatFunctionType]=None,
-       alpha:Union[float,Iterable[float]]=0.05, n_samples:int=10000,
-       method: Literal['pi','bca','abc']='bca',
-       output: Literal['lowhigh','errorbar']='lowhigh',
-       epsilon:float=0.001,
-       multi: Literal[None, False, True, 'independent', 'paired']=None,
+       statfunction: Optional[StatFunctionType] = None,
+       alpha: Union[float, Iterable[float]] = 0.05, n_samples: int = 10000,
+       method: Literal['pi', 'bca', 'abc'] = 'bca',
+       output: Literal['lowhigh', 'errorbar'] = 'lowhigh',
+       epsilon: float = 0.001,
+       multi: Literal[None, False, True, 'independent', 'paired'] = None,
        return_dist: Literal[False, True] = False,
-       seed=None):
+       seed=None,
+       _use_numba:bool = False):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -191,7 +195,8 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
     # Actually check multi value:
     if multi not in [False, True, None, "independent", "paired"]:
-        raise ValueError("Value `{}` for multi is not recognized.".format(multi))
+        raise ValueError(
+            "Value `{}` for multi is not recognized.".format(multi))
 
     if multi is None:
         multi = bool(isinstance(data, Tuple))
@@ -199,11 +204,11 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # Ensure that the data is actually an array. This isn't nice to pandas,
     # but pandas seems much much slower and the indices become a problem.
     if multi and isinstance(data, Iterable):
-        tdata = tuple( np.array(x) for x in data )
+        tdata = tuple(np.array(x) for x in data)
         lengths = [x.shape[0] for x in tdata]
         if (len(np.unique(lengths)) > 1) and multi != 'independent':
             raise ValueError("Data arrays have differing lengths {}, and ".format(lengths) +
-                "multi is not set to 'independent'.")
+                             "multi is not set to 'independent'.")
     else:
         tdata = (np.array(data),)
 
@@ -229,8 +234,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         return _ci_abc(tdata, statfunction, epsilon, alphas, output, multi)
 
     if multi != 'independent':
-        if statfunction in (np.average, np.mean) and len(tdata) == 1 and False:
-            stat = _calculate_boostrap_mean_stat(tdata[0], n_samples)
+        if statfunction in (np.average, np.mean) and len(tdata) == 1 and NUMBA_AVAILABLE and _use_numba:
+            numba_seed = int(rng.integers(1_000_000_000)) # FIXME: better than nothing for now
+            # Numba doesn't support generators.
+            stat = _calculate_boostrap_mean_stat(tdata[0], n_samples, seed=numba_seed)
         else:
             bootindices = bootstrap_indices(tdata[0], n_samples, seed=rng)
             stat = np.array([statfunction(*(x[indices] for x in tdata))
@@ -238,14 +245,13 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     else:
         bootindices = bootstrap_indices_independent(tdata, n_samples, seed=rng)
         stat = np.array([statfunction(*(x[i] for x, i in zip(tdata, indices)))
-            for indices in bootindices])
+                         for indices in bootindices])
     stat.sort(axis=0)
-
 
     if method == 'pi':     # Percentile Interval Method
         avals = alphas
     elif method == 'bca':     # Bias-Corrected Accelerated Method
-        avals = _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi)
+        avals = _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi, _use_numba=_use_numba)
     else:
         raise ValueError("Method {0} is not supported.".format(method))
 
@@ -281,7 +287,8 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         if nvals.ndim == 1:
             out = abs(statfunction(*tdata)-stat[nvals])[np.newaxis].T
         else:
-            out = abs(statfunction(*tdata)-stat[(nvals, np.indices(nvals.shape)[1:])])[np.newaxis].T
+            out = abs(statfunction(*tdata) -
+                      stat[(nvals, np.indices(nvals.shape)[1:])])[np.newaxis].T
     else:
         raise ValueError("Output option {0} is not supported.".format(output))
 
@@ -293,7 +300,8 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
 def _ci_abc(tdata, statfunction, epsilon, alphas, output, multi):
     if multi == 'independent':
-        raise ValueError("multi='independent' is not currently supported for ABC.")
+        raise ValueError(
+            "multi='independent' is not currently supported for ABC.")
     n = tdata[0].shape[0]*1.0
     nn = tdata[0].shape[0]
 
@@ -338,7 +346,7 @@ def _ci_abc(tdata, statfunction, epsilon, alphas, output, multi):
     raise ValueError("Output option {0} is not supported.".format(output))
 
 
-def _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi):
+def _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi, _use_numba=False):
     # The value of the statistic function applied just to the actual data.
     ostat = statfunction(*tdata)
 
@@ -347,17 +355,17 @@ def _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi):
 
     # Statistics of the jackknife distribution
     if multi != 'independent':
-        if statfunction in (np.average, np.mean) and len(tdata) == 1:
+        if statfunction in (np.average, np.mean) and len(tdata) == 1 and NUMBA_AVAILABLE and _use_numba:
             jstat = _calculate_jackknife_mean_stat(tdata[0]).tolist()
         else:
             jstat = []
             for i in np.arange(0, len(tdata[0])):
-                jstat.append(statfunction(*(np.concatenate((x[:i], x[i + 1:])) for x in tdata)))
+                jstat.append(statfunction(
+                    *(np.concatenate((x[:i], x[i + 1:])) for x in tdata)))
     else:
         jackindices = jackknife_indices_independent(tdata)
         jstat = np.array([statfunction(*(x[i] for x, i in zip(tdata, indices)))
-            for indices in jackindices])
-
+                          for indices in jackindices])
 
     jmean = np.mean(jstat, axis=0)
     # Temporarily kill numpy warnings:
@@ -392,7 +400,10 @@ def _calculate_jackknife_mean_stat(data: np.ndarray) -> np.ndarray:
 
 
 @njit(parallel=True, fastmath=True)
-def _calculate_boostrap_mean_stat(data: np.ndarray, n_samples: int) -> np.ndarray:
+def _calculate_boostrap_mean_stat(data: np.ndarray, n_samples: int, seed=None) -> np.ndarray:
+    if seed is not None:
+        np.random.seed(seed)
+    np.random.seed(10)
     n = data.shape[0]
     stat = np.zeros(n_samples)
     for i in prange(n_samples):
@@ -427,8 +438,9 @@ a list of arrays where each array is a set of jackknife indices.
 For a given set of data Y, the jackknife sample J[i] is defined as the data set
 Y with the ith data point deleted.
     """
-    base = np.arange(0,len(data))
-    return (np.delete(base,i) for i in base)
+    base = np.arange(0, len(data))
+    return (np.delete(base, i) for i in base)
+
 
 def jackknife_indices_independent(data: Tuple[np.ndarray, ...]):
     base = [np.arange(0, len(x)) for x in data]
@@ -454,13 +466,13 @@ samples)
         size = int(round(size*len(data)))
     elif size < 1:
         raise ValueError("size cannot be {0}".format(size))
-    base = np.tile(np.arange(len(data)),(n_samples,1))
+    base = np.tile(np.arange(len(data)), (n_samples, 1))
     for sample in base:
         rng.shuffle(sample)
-    return base[:,0:size]
+    return base[:, 0:size]
 
 
-def bootstrap_indices_moving_block(data: np.ndarray, n_samples: int=10000,
+def bootstrap_indices_moving_block(data: np.ndarray, n_samples: int = 10000,
                                    block_length: int = 3, wrap: bool = False,
                                    seed=None):
     """Generate moving-block bootstrap samples.
@@ -500,8 +512,8 @@ around to the beginning of the data again.
             yield np.mod((blocks[:, None]+nexts).ravel()[:n_obs], n_obs)
 
 
-def pval(data: DataType, statfunction:StatFunctionType=np.average,
-         compfunction:Callable[[Any], bool]=lambda s: s > 0, n_samples:int=10000,
+def pval(data: DataType, statfunction: StatFunctionType = np.average,
+         compfunction: Callable[[Any], bool] = lambda s: s > 0, n_samples: int = 10000,
          multi: Optional[bool] = None, seed=None):
     """
 Given a set of data ``data``, a statistics function ``statfunction`` that
@@ -565,14 +577,14 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         data = np.array(data)
         tdata = (data,)
     else:
-        tdata = tuple( np.array(x) for x in data )
-
+        tdata = tuple(np.array(x) for x in data)
 
     # We don't need to generate actual samples; that would take more memory.
     # Instead, we can generate just the indices, and then apply the statfun
     # to those indices.
     bootindices = bootstrap_indices(tdata[0], n_samples, seed=rng)
-    stat = np.array([statfunction(*(x[indices] for x in tdata)) for indices in bootindices])
+    stat = np.array([statfunction(*(x[indices] for x in tdata))
+                    for indices in bootindices])
     stat.sort(axis=0)
 
     pval_stat = [compfunction(s) for s in stat]

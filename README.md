@@ -30,17 +30,25 @@ by the Evans Foundation.
 Version Info
 ============
 
+HEAD:   Randomness is now generated via a numpy.random Generator.  Anything
+        that relied on using numpy.random.seed to obtain deterministic results
+        will fail (mostly of relevance for testing).  Seeds (or Generators) can
+        now be passed to relevant functions with the `seed` argument, but note
+        that changes in Numpy's random number generation means this will not
+        give the same results that would be obtained using `numpy.random.seed`
+        to set the seed in previous versions.
+
 v1.0.1: Licensing information added.
 
 v1.0.0: scikits.bootstrap now uses pyerf, which means that it doesn't actually
         need scipy at all.  It should work with PyPy, has some improved error
-		and warning messages, and should be a bit faster in many cases.  The old
-		ci_abc function has been removed: use method='abc' instead.
+        and warning messages, and should be a bit faster in many cases.  The old
+        ci_abc function has been removed: use method='abc' instead.
 
 v0.3.3: Bug fixes.  Warnings have been cleaned up, and are implemented for BCa
         when all statistic values are equal (a common confusion in prior versions).
-		Related numpy warnings are now suppressed.  Some tests on Python 2 were
-		fixed, and the PyPI website link is now correct.
+        Related numpy warnings are now suppressed.  Some tests on Python 2 were
+        fixed, and the PyPI website link is now correct.
 
 v0.3.2: This version contains various fixes to allow compatibility with Python
         3.3. While I have not used the package extensively with Python 3, all

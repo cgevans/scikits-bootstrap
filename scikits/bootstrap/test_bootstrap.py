@@ -21,21 +21,26 @@ class test_ci():
         self.x = [1,2,3,4,5,6]
         self.y = [2,1,2,5,1,2]
         self.z = [2,1,1,-1,-1,-4,-8]
+        self.seed = 1234567890
         if not no_pandas:
             self.pds = pandas.Series(self.data,index=np.arange(50,70))
 
     def test_bootstrap_indices(self):
-        np.random.seed(1234567890)
-        indices = np.array([x for x in boot.bootstrap_indices(np.array([1,2,3,4,5]), n_samples=3)])
-        np.testing.assert_array_equal(indices, np.array([[2, 4, 3, 1, 3],[1, 4, 1, 4, 4],[0, 2, 1, 4, 4]]))
+        indices = np.array([x for x in boot.bootstrap_indices(
+            np.array([1, 2, 3, 4, 5]), n_samples=3, seed=self.seed)])
+        np.testing.assert_array_equal(indices, np.array([[2, 3, 0, 0, 2],
+                                                         [2, 3, 3, 0, 3],
+                                                         [0, 0, 2, 4, 2]])
+                                      )
 
     def test_bootstrap_indices_moving_block(self):
-        np.random.seed(1234567897)
-        indices = np.array([x for x in boot.bootstrap_indices_moving_block(np.array([1,2,3,4,5]), n_samples=3)])
-        np.testing.assert_array_equal(indices, np.array([[1, 2, 3, 1, 2], [0, 1, 2, 0, 1], [0, 1, 2, 0, 1]]))
+        indices = np.array([x for x in boot.bootstrap_indices_moving_block(
+            np.array([1, 2, 3, 4, 5]), n_samples=3, seed=self.seed)])
+        np.testing.assert_array_equal(indices, np.array([[0, 1, 2, 1, 2],
+             [0, 1, 2, 0, 1],
+             [1, 2, 3, 1, 2]]))
 
     def test_jackknife_indices(self):
-        np.random.seed(1234567890)
         indices = np.array([x for x in boot.jackknife_indices(np.array([1,2,3]))])
         np.testing.assert_array_equal(indices, np.array([[1, 2],[0, 2],[0, 1]]))
 
@@ -46,7 +51,6 @@ class test_ci():
             np.testing.assert_(len(np.unique(x)) == len(self.data)/2)
 
     def test_subsample_indices_notsame(self):
-        np.random.seed(1234567890)
         indices = boot.subsample_indices(np.arange(0,50), 1000, -1)
         # Test to make sure that subsamples are not all the same.
         # In theory, this test could fail even with correct code, but in
@@ -56,12 +60,13 @@ class test_ci():
     def test_abc_simple(self):
         results = boot.ci(self.data,
                           lambda x, weights: np.average(x, weights=weights),
-                          method='abc')
+                          method='abc', seed=self.seed)
         np.testing.assert_array_almost_equal(
             results, np.array([0.20982275, 1.20374686]))
     
     def test_abc_multialpha_defaultstat(self):
-        results = boot.ci(self.data, alpha=(0.1,0.2,0.8,0.9), method='abc')
+        results = boot.ci(self.data, alpha=(
+            0.1, 0.2, 0.8, 0.9), method='abc', seed=self.seed)
         np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
 
 # I can't actually figure out how to make this work right now...
@@ -72,48 +77,49 @@ class test_ci():
 #        np.testing.assert_array_almost_equal(results,np.array([-0.11925356, -0.03973595,  0.24915691,  0.32083297]))
 
     def test_pi_multialpha(self):
-        np.random.seed(1234567890)
-        results = boot.ci(self.data, method='pi', alpha=(0.1,0.2,0.8,0.9))
-        np.testing.assert_array_almost_equal(results,np.array([ 0.40351601,  0.51723236,  0.94547054,  1.05749207]))
+        results = boot.ci(self.data,
+                          method='pi',
+                          alpha=(0.1, 0.2, 0.8, 0.9),
+                          seed=self.seed)
+        np.testing.assert_array_almost_equal(
+            results, np.array([0.401879, 0.517506, 0.945416, 1.052798]))
 
     def test_bca_simple(self):
-        np.random.seed(1234567890)
-        results = boot.ci(self.data)
-        np.testing.assert_array_almost_equal(
-            results, np.array([0.20907826, 1.19877862]))
+        results = boot.ci(self.data, seed=self.seed)
+        results2 = boot.ci(self.data, alpha=(0.025, 1-0.025), seed=self.seed)
+        np.testing.assert_array_almost_equal(results, results2)
 
     def test_bca_errorbar_output_simple(self):
-        np.random.seed(1234567890)
-        results_default = boot.ci(self.data)
-        np.random.seed(1234567890)
-        results_errorbar = boot.ci(self.data, output='errorbar')
+        results_default = boot.ci(self.data, seed=self.seed)
+        results_errorbar = boot.ci(
+            self.data, output='errorbar', seed=self.seed)
         np.testing.assert_array_almost_equal(
             results_errorbar.T,
             abs(np.average(self.data) - results_default)[np.newaxis])
 
     def test_bca_multialpha(self):
-        np.random.seed(1234567890)
-        results = boot.ci(self.data, alpha=(0.1, 0.2, 0.8, 0.9))
+        results = boot.ci(self.data, alpha=(
+            0.1, 0.2, 0.8, 0.9), seed=self.seed)
         np.testing.assert_array_almost_equal(results, np.array(
-            [0.39210727, 0.50775386, 0.93673299, 1.0476729]))
+            [0.386674, 0.506714, 0.935628, 1.039683]))
         
     def test_bca_multi_multialpha(self):
-        np.random.seed(1234567890)
-        results1 = boot.ci((self.x,self.y), lambda a,b: np.polyfit(a,b,1), alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
-        np.random.seed(1234567890)
-        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1), alpha=(0.1,0.2,0.8,0.9),n_samples=1000)
+        results1 = boot.ci((self.x, self.y), lambda a, b: np.polyfit(
+            a, b, 1), alpha=(0.1, 0.2, 0.8, 0.9), n_samples=1000, seed=self.seed)
+        results2 = boot.ci(np.vstack((self.x, self.y)).T, lambda a: np.polyfit(
+            a[:, 0], a[:, 1], 1), alpha=(0.1, 0.2, 0.8, 0.9), n_samples=1000, seed=self.seed)
         np.testing.assert_array_almost_equal(results1,results2)
 
     def test_bca_multi_indep(self):
         results1 = boot.ci((self.x, self.z), lambda a,b: np.average(a) - np.average(b), n_samples=1000, multi='independent')
 
     def test_bca_multi_2dout_multialpha(self):
-        np.random.seed(1234567890)
-        results1 = boot.ci((self.x,self.y), lambda a,b: np.polyfit(a,b,1), alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
-        np.random.seed(1234567890)
-        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1)[0], alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
-        np.random.seed(1234567890)
-        results3 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=2000)
+        results1 = boot.ci((self.x, self.y), lambda a, b: np.polyfit(
+            a, b, 1), alpha=(0.1, 0.2, 0.8, 0.9), n_samples=2000, seed=self.seed)
+        results2 = boot.ci(np.vstack((self.x, self.y)).T, lambda a: np.polyfit(
+            a[:, 0], a[:, 1], 1)[0], alpha=(0.1, 0.2, 0.8, 0.9), n_samples=2000, seed=self.seed)
+        results3 = boot.ci(np.vstack((self.x, self.y)).T, lambda a: np.polyfit(
+            a[:, 0], a[:, 1], 1)[1], alpha=(0.1, 0.2, 0.8, 0.9), n_samples=2000, seed=self.seed)
         np.testing.assert_array_almost_equal(results1[:,0],results2)
         np.testing.assert_array_almost_equal(results1[:,1],results3)
 
@@ -123,55 +129,61 @@ class test_ci():
         (self.x,self.z), lambda a,b: np.average(a) - np.average(b), n_samples=1000, multi='indepedent')
 
     def test_pi_multi_2dout_multialpha(self):
-        np.random.seed(1234567890)
-        results1 = boot.ci((self.x,self.y), lambda a,b: np.polyfit(a,b,1), alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
-        np.random.seed(1234567890)
-        results2 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1)[0], alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
-        np.random.seed(1234567890)
-        results3 = boot.ci(np.vstack((self.x,self.y)).T, lambda a: np.polyfit(a[:,0],a[:,1],1)[1], alpha=(0.1,0.2,0.8,0.9),n_samples=2000,method='pi')
+        results1 = boot.ci((self.x, self.y), lambda a, b: np.polyfit(a, b, 1), alpha=(
+            0.1, 0.2, 0.8, 0.9), n_samples=2000, method='pi', seed=self.seed)
+        results2 = boot.ci(np.vstack((self.x, self.y)).T, lambda a: np.polyfit(a[:, 0], a[:, 1], 1)[
+                           0], alpha=(0.1, 0.2, 0.8, 0.9), n_samples=2000, method='pi', seed=self.seed)
+        results3 = boot.ci(np.vstack((self.x, self.y)).T, lambda a: np.polyfit(a[:, 0], a[:, 1], 1)[
+                           1], alpha=(0.1, 0.2, 0.8, 0.9), n_samples=2000, method='pi', seed=self.seed)
         np.testing.assert_array_almost_equal(results1[:,0],results2)
         np.testing.assert_array_almost_equal(results1[:,1],results3)
     
     def test_bca_n_samples(self):
-        np.random.seed(1234567890)
-        results = boot.ci(self.data, alpha=(0.1,0.2,0.8,0.9),n_samples=500)
-        np.testing.assert_array_almost_equal(results,np.array([ 0.40027628,  0.5063184 ,  0.94082515,  1.05653929]))
+        seed = self.seed
+        results = boot.ci(self.data,
+                          alpha=(0.1, 0.2, 0.8, 0.9),
+                          n_samples=500,
+                          seed=self.seed)
+        np.testing.assert_array_almost_equal(
+            results, np.array([0.37248, 0.507976, 0.92783, 1.039755]))
 
     def test_pi_simple(self):
-        np.random.seed(1234567890)
-        results = boot.ci(self.data, method='pi')
-        np.testing.assert_array_almost_equal(results,np.array([ 0.2288689 ,  1.21259752]))
+        seed = self.seed
+        results = boot.ci(self.data, method='pi', seed=self.seed)
+        results2 = boot.ci(self.data, method='pi',
+                           alpha=(0.025, 1-0.025), seed=self.seed)
+        np.testing.assert_array_almost_equal(results, results2)
 
     @dec.skipif(no_pandas)
     def test_abc_pandas_series(self):
-        results = boot.ci(self.pds, method='abc')
-        np.testing.assert_array_almost_equal(results,np.array([ 0.20982275,  1.20374686]))
+        results = boot.ci(self.pds, method='abc', seed=self.seed)
+        results2 = boot.ci(self.data, method='abc', seed=self.seed)
+        np.testing.assert_array_almost_equal(results, results2)
 
     @dec.skipif(no_pandas)
     def test_bca_pandas_series(self):
-        np.random.seed(1234567890)
-        results = boot.ci(self.pds)
-        np.testing.assert_array_almost_equal(results,np.array([ 0.20907826,  1.19877862]))
+        results = boot.ci(self.pds, seed=self.seed)
+        results2 = boot.ci(self.data, seed=self.seed)
+        np.testing.assert_array_almost_equal(results, results2)
 
     @dec.skipif(no_pandas)
     def test_pi_pandas_series(self):
-        np.random.seed(1234567890)
-        results = boot.ci(self.pds, method='pi')
-        np.testing.assert_array_almost_equal(results,np.array([ 0.2288689 ,  1.21259752]))
+        results = boot.ci(self.pds, method='pi', seed=self.seed)
+        results2 = boot.ci(self.data, method='pi', seed=self.seed)
+        np.testing.assert_array_almost_equal(results, results2)
 
 class test_pval():
     def setup(self):
-        pass
+        self.seed = 123467890
 
     def test_pval(self):
-        np.random.seed(1234567890)
-
+        rng = np.random.default_rng(seed=self.seed)
         mu = 1
         s2 = 2
         N = 10000
         NS = 10000
 
-        data = np.random.normal(mu, s2, N)
+        data = rng.normal(mu, s2, N)
 
         # print "Dist Normal(%.1f, %.1f)" % (mu,s2)
         # print "Analytic CI: ", [np.average(data) - 1.96 * np.sqrt(np.var(data)) / np.sqrt(N), np.average(data) + 1.96 * np.sqrt(np.var(data)) / np.sqrt(N) ]
@@ -179,7 +191,8 @@ class test_pval():
 
         # print "P(np.average is in 95% CI):", bs.pval(data, np.average, lambda s: 0.98544817 <= s <= 1.06404872, n_samples=NS)
 
-        result = boot.pval(data, np.average, lambda s: 0.98544817 <= s <= 1.06404872, n_samples=NS)
+        result = boot.pval(data, np.average, lambda s: 0.98544817 <=
+                           s <= 1.06404872, n_samples=NS, seed=rng)
         np.testing.assert_almost_equal(result, 0.95079, 3)
 
 if __name__ == "__main__":

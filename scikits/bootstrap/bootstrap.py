@@ -64,7 +64,8 @@ def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray],
        output: Literal['lowhigh','errorbar']='lowhigh',
        epsilon:float=0.001,
        multi: Literal[None, False, True, 'independent', 'paired']=None,
-       return_dist: Literal[False, True]=False):
+       return_dist: Literal[False, True] = False,
+       seed=None):
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -185,6 +186,9 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     else:
         alphas = np.array([alpha/2, 1-alpha/2])
 
+    # Create a new rng instance
+    rng = np.random.default_rng(seed=seed)
+
     # Actually check multi value:
     if multi not in [False, True, None, "independent", "paired"]:
         raise ValueError("Value `{}` for multi is not recognized.".format(multi))
@@ -225,13 +229,14 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         return _ci_abc(tdata, statfunction, epsilon, alphas, output, multi)
 
     if multi != 'independent':
-        if statfunction in (np.average, np.mean) and len(tdata) == 1:
+        if statfunction in (np.average, np.mean) and len(tdata) == 1 and False:
             stat = _calculate_boostrap_mean_stat(tdata[0], n_samples)
         else:
-            rng = np.random.default_rng()
-            stat = np.array([statfunction(*(rng.choice(x, tdata[0].shape[0]) for x in tdata)) for _ in range(n_samples)])
+            bootindices = bootstrap_indices(tdata[0], n_samples, seed=rng)
+            stat = np.array([statfunction(*(x[indices] for x in tdata))
+                            for indices in bootindices])
     else:
-        bootindices = bootstrap_indices_independent(tdata, n_samples)
+        bootindices = bootstrap_indices_independent(tdata, n_samples, seed=rng)
         stat = np.array([statfunction(*(x[i] for x, i in zip(tdata, indices)))
             for indices in bootindices])
     stat.sort(axis=0)
@@ -395,18 +400,23 @@ def _calculate_boostrap_mean_stat(data: np.ndarray, n_samples: int) -> np.ndarra
     return stat
 
 
-def bootstrap_indices(data: np.ndarray, n_samples: int=10000):
+def bootstrap_indices(data: np.ndarray, n_samples: int = 10000, seed=None):
     """
 Given data points data, where axis 0 is considered to delineate points, return
 an generator for sets of bootstrap indices. This can be used as a list
 of bootstrap indices (with list(bootstrap_indices(data))) as well.
     """
+    rng = np.random.default_rng(seed=seed)
+    dlen = data.shape[0]
     for _ in range(n_samples):
-        yield randint(data.shape[0], size=(data.shape[0],))
+        yield rng.integers(low=0, high=dlen, size=(dlen,))
 
-def bootstrap_indices_independent(data: Tuple[np.ndarray, ...], n_samples: int=10000):
+
+def bootstrap_indices_independent(data: Tuple[np.ndarray, ...], n_samples: int = 10000, seed=None):
+    rng = np.random.default_rng(seed=seed)
+    dlens = [x.shape[0] for x in data]
     for _ in range(n_samples):
-        yield tuple(randint(x.shape[0], size=(x.shape[0],)) for x in data)
+        yield tuple(rng.integers(low=0, high=dlen, size=(dlen,)) for dlen in dlens)
 
 
 def jackknife_indices(data: np.ndarray):
@@ -426,7 +436,8 @@ def jackknife_indices_independent(data: Tuple[np.ndarray, ...]):
         for j in base[i]:
             yield tuple(base[0:i] + [np.delete(b, j)] + base[i+1:])
 
-def subsample_indices(data: np.ndarray, n_samples: int=1000, size: float=0.5):
+
+def subsample_indices(data: np.ndarray, n_samples: int = 1000, size: float = 0.5, seed=None):
     """
 Given data points data, where axis 0 is considered to delineate points, return
 a list of arrays where each array is indices a subsample of the data of size
@@ -435,6 +446,8 @@ size < 1, it will be taken to be a fraction of the data size. If size == -1, it
 will be taken to mean subsamples the same size as the sample (ie, permuted
 samples)
     """
+    rng = np.random.default_rng(seed=seed)
+
     if size == -1:
         size = len(data)
     elif 0 < size < 1:
@@ -443,12 +456,13 @@ samples)
         raise ValueError("size cannot be {0}".format(size))
     base = np.tile(np.arange(len(data)),(n_samples,1))
     for sample in base:
-        np.random.shuffle(sample)
+        rng.shuffle(sample)
     return base[:,0:size]
 
 
 def bootstrap_indices_moving_block(data: np.ndarray, n_samples: int=10000,
-                                   block_length: int=3, wrap: bool=False):
+                                   block_length: int = 3, wrap: bool = False,
+                                   seed=None):
     """Generate moving-block bootstrap samples.
 
 Given data points `data`, where axis 0 is considered to delineate points,
@@ -468,6 +482,7 @@ the last block for data of length L start at L-block_length.  If true, choose
 blocks starting anywhere, and if they extend past the end of the data, wrap
 around to the beginning of the data again.
 """
+    rng = np.random.default_rng(seed=seed)
     n_obs = data.shape[0]
     n_blocks = int(ceil(n_obs / block_length))
     nexts = np.repeat(np.arange(0, block_length)[None, :], n_blocks, axis=0)
@@ -478,7 +493,7 @@ around to the beginning of the data again.
         last_block = n_obs - block_length
 
     for _ in range(n_samples):
-        blocks = np.random.randint(0, last_block, size=n_blocks)
+        blocks = rng.integers(0, last_block, size=n_blocks)
         if not wrap:
             yield (blocks[:, None]+nexts).ravel()[:n_obs]
         else:
@@ -487,7 +502,7 @@ around to the beginning of the data again.
 
 def pval(data: DataType, statfunction:StatFunctionType=np.average,
          compfunction:Callable[[Any], bool]=lambda s: s > 0, n_samples:int=10000,
-         multi:Optional[bool]=None):
+         multi: Optional[bool] = None, seed=None):
     """
 Given a set of data ``data``, a statistics function ``statfunction`` that
 applies to that data, and the criteriafunction ``compfunction``, computes the
@@ -539,6 +554,8 @@ References
 Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     """
 
+    rng = np.random.default_rng(seed=seed)
+
     if multi is None:
         multi = bool(isinstance(data, tuple))
 
@@ -554,7 +571,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # We don't need to generate actual samples; that would take more memory.
     # Instead, we can generate just the indices, and then apply the statfun
     # to those indices.
-    bootindices = bootstrap_indices( tdata[0], n_samples )
+    bootindices = bootstrap_indices(tdata[0], n_samples, seed=rng)
     stat = np.array([statfunction(*(x[indices] for x in tdata)) for indices in bootindices])
     stat.sort(axis=0)
 

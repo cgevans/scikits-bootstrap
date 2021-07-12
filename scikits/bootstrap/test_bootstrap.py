@@ -2,17 +2,17 @@ from __future__ import division
 
 import scikits.bootstrap as boot
 import numpy as np
-from numpy.testing import dec, assert_raises
-
+from numpy.testing import assert_raises, assert_allclose
+import pytest
 
 try:
-    import pandas
+    import pandas as pd
+    PANDAS_AVAILABLE = True
 except ImportError:
-    no_pandas = True
-else:
-    no_pandas = False
+    PANDAS_AVAILABLE = False
 
-class test_ci():
+
+class TestCI:
     def setup(self):
         self.data = np.array([ 1.34016346,  1.73759123,  1.49898834, -0.22864333,  2.031034  ,
                             2.17032495,  1.59645265, -0.76945156,  0.56605824, -0.11927018,
@@ -22,13 +22,25 @@ class test_ci():
         self.y = [2,1,2,5,1,2]
         self.z = [2,1,1,-1,-1,-4,-8]
         self.seed = 1234567890
-        if not no_pandas:
-            self.pds = pandas.Series(self.data,index=np.arange(50,70))
+        if PANDAS_AVAILABLE:
+            self.pds = pd.Series(self.data, index=np.arange(50, 70))
+
+    @pytest.mark.skipif(not boot.bootstrap.NUMBA_AVAILABLE, reason="Numba not available")
+    def test_numba_close(self):
+        dat = np.random.randint(10, size=50)
+        no_numba = boot.ci(dat, n_samples=100000)
+        with_numba = boot.ci(dat, n_samples=100000, use_numba=True)
+        assert_allclose(no_numba, with_numba, rtol=1e-2)
+
+    @pytest.mark.skipif(boot.bootstrap.NUMBA_AVAILABLE, reason="Numba is available")
+    def test_numba_unavailable(self):
+        with pytest.raises(ValueError):
+            boot.ci(self.data, n_samples=100000, use_numba=True)
 
     def test_bootstrap_indices(self):
         indices = np.array([x for x in boot.bootstrap_indices(
             np.array([1, 2, 3, 4, 5]), n_samples=3, seed=self.seed)])
-        np.testing.assert_array_equal(indices, np.array([[2, 3, 0, 0, 2],
+        assert_allclose(indices, np.array([[2, 3, 0, 0, 2],
                                                          [2, 3, 3, 0, 3],
                                                          [0, 0, 2, 4, 2]])
                                       )
@@ -36,13 +48,13 @@ class test_ci():
     def test_bootstrap_indices_moving_block(self):
         indices = np.array([x for x in boot.bootstrap_indices_moving_block(
             np.array([1, 2, 3, 4, 5]), n_samples=3, seed=self.seed)])
-        np.testing.assert_array_equal(indices, np.array([[0, 1, 2, 1, 2],
+        assert_allclose(indices, np.array([[0, 1, 2, 1, 2],
              [0, 1, 2, 0, 1],
              [1, 2, 3, 1, 2]]))
 
     def test_jackknife_indices(self):
         indices = np.array([x for x in boot.jackknife_indices(np.array([1,2,3]))])
-        np.testing.assert_array_equal(indices, np.array([[1, 2],[0, 2],[0, 1]]))
+        assert_allclose(indices, np.array([[1, 2],[0, 2],[0, 1]]))
 
     def test_subsample_indices(self):
         indices = boot.subsample_indices(self.data, 1000, 0.5)
@@ -59,56 +71,55 @@ class test_ci():
 
     def test_abc_simple(self):
         results = boot.ci(self.data,
-                          lambda x, weights: np.average(x, weights=weights),
                           method='abc', seed=self.seed)
-        np.testing.assert_array_almost_equal(
+        assert_allclose(
             results, np.array([0.20982275, 1.20374686]))
     
     def test_abc_multialpha_defaultstat(self):
         results = boot.ci(self.data, alpha=(
             0.1, 0.2, 0.8, 0.9), method='abc', seed=self.seed)
-        np.testing.assert_array_almost_equal(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
+        assert_allclose(results,np.array([ 0.39472915,  0.51161304,  0.93789723,  1.04407254]))
 
 # I can't actually figure out how to make this work right now...
 #    def test_abc_epsilon(self):
 #        results = boot.ci_abc(self.data,lambda x,y: np.sum(y*np.sin(100*x))/np.sum(y),alpha=(0.1,0.2,0.8,0.9))
-#        np.testing.assert_array_almost_equal(results,np.array([-0.11925356, -0.03973595,  0.24915691,  0.32083297]))
+#        assert_allclose(results,np.array([-0.11925356, -0.03973595,  0.24915691,  0.32083297]))
 #        results = boot.ci_abc(self.data,lambda x,y: np.sum(y*np.sin(100*x))/np.sum(y),alpha=(0.1,0.2,0.8,0.9),epsilon=20000.5)
-#        np.testing.assert_array_almost_equal(results,np.array([-0.11925356, -0.03973595,  0.24915691,  0.32083297]))
+#        assert_allclose(results,np.array([-0.11925356, -0.03973595,  0.24915691,  0.32083297]))
 
     def test_pi_multialpha(self):
         results = boot.ci(self.data,
                           method='pi',
                           alpha=(0.1, 0.2, 0.8, 0.9),
                           seed=self.seed)
-        np.testing.assert_array_almost_equal(
-            results, np.array([0.401879, 0.517506, 0.945416, 1.052798]))
+        assert_allclose(
+            results, np.array([0.401879, 0.517506, 0.945416, 1.052798]), rtol=1e-6)
 
     def test_bca_simple(self):
         results = boot.ci(self.data, seed=self.seed)
         results2 = boot.ci(self.data, alpha=(0.025, 1-0.025), seed=self.seed)
-        np.testing.assert_array_almost_equal(results, results2)
+        assert_allclose(results, results2)
 
     def test_bca_errorbar_output_simple(self):
         results_default = boot.ci(self.data, seed=self.seed)
         results_errorbar = boot.ci(
             self.data, output='errorbar', seed=self.seed)
-        np.testing.assert_array_almost_equal(
+        assert_allclose(
             results_errorbar.T,
             abs(np.average(self.data) - results_default)[np.newaxis])
 
     def test_bca_multialpha(self):
         results = boot.ci(self.data, alpha=(
             0.1, 0.2, 0.8, 0.9), seed=self.seed)
-        np.testing.assert_array_almost_equal(results, np.array(
-            [0.386674, 0.506714, 0.935628, 1.039683]))
+        assert_allclose(results, np.array(
+            [0.386674, 0.506714, 0.935628, 1.039683]), rtol=1e-6)
         
     def test_bca_multi_multialpha(self):
         results1 = boot.ci((self.x, self.y), lambda a, b: np.polyfit(
             a, b, 1), alpha=(0.1, 0.2, 0.8, 0.9), n_samples=1000, seed=self.seed)
         results2 = boot.ci(np.vstack((self.x, self.y)).T, lambda a: np.polyfit(
             a[:, 0], a[:, 1], 1), alpha=(0.1, 0.2, 0.8, 0.9), n_samples=1000, seed=self.seed)
-        np.testing.assert_array_almost_equal(results1,results2)
+        assert_allclose(results1,results2)
 
     def test_bca_multi_indep(self):
         results1 = boot.ci((self.x, self.z), lambda a,b: np.average(a) - np.average(b), n_samples=1000, multi='independent')
@@ -120,8 +131,8 @@ class test_ci():
             a[:, 0], a[:, 1], 1)[0], alpha=(0.1, 0.2, 0.8, 0.9), n_samples=2000, seed=self.seed)
         results3 = boot.ci(np.vstack((self.x, self.y)).T, lambda a: np.polyfit(
             a[:, 0], a[:, 1], 1)[1], alpha=(0.1, 0.2, 0.8, 0.9), n_samples=2000, seed=self.seed)
-        np.testing.assert_array_almost_equal(results1[:,0],results2)
-        np.testing.assert_array_almost_equal(results1[:,1],results3)
+        assert_allclose(results1[:,0],results2)
+        assert_allclose(results1[:,1],results3)
 
     def test_multi_fail(self):
         assert_raises(ValueError,
@@ -135,46 +146,44 @@ class test_ci():
                            0], alpha=(0.1, 0.2, 0.8, 0.9), n_samples=2000, method='pi', seed=self.seed)
         results3 = boot.ci(np.vstack((self.x, self.y)).T, lambda a: np.polyfit(a[:, 0], a[:, 1], 1)[
                            1], alpha=(0.1, 0.2, 0.8, 0.9), n_samples=2000, method='pi', seed=self.seed)
-        np.testing.assert_array_almost_equal(results1[:,0],results2)
-        np.testing.assert_array_almost_equal(results1[:,1],results3)
+        assert_allclose(results1[:,0],results2)
+        assert_allclose(results1[:,1],results3)
     
     def test_bca_n_samples(self):
-        seed = self.seed
         results = boot.ci(self.data,
                           alpha=(0.1, 0.2, 0.8, 0.9),
                           n_samples=500,
                           seed=self.seed)
-        np.testing.assert_array_almost_equal(
-            results, np.array([0.37248, 0.507976, 0.92783, 1.039755]))
+        assert_allclose(
+            results, np.array([0.37248, 0.507976, 0.92783, 1.039755]), rtol=1e-6)
 
     def test_pi_simple(self):
-        seed = self.seed
         results = boot.ci(self.data, method='pi', seed=self.seed)
         results2 = boot.ci(self.data, method='pi',
                            alpha=(0.025, 1-0.025), seed=self.seed)
-        np.testing.assert_array_almost_equal(results, results2)
+        assert_allclose(results, results2)
 
-    @dec.skipif(no_pandas)
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_abc_pandas_series(self):
         results = boot.ci(self.pds, method='abc', seed=self.seed)
         results2 = boot.ci(self.data, method='abc', seed=self.seed)
-        np.testing.assert_array_almost_equal(results, results2)
+        assert_allclose(results, results2)
 
-    @dec.skipif(no_pandas)
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_bca_pandas_series(self):
         results = boot.ci(self.pds, seed=self.seed)
         results2 = boot.ci(self.data, seed=self.seed)
-        np.testing.assert_array_almost_equal(results, results2)
+        assert_allclose(results, results2)
 
-    @dec.skipif(no_pandas)
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pi_pandas_series(self):
         results = boot.ci(self.pds, method='pi', seed=self.seed)
         results2 = boot.ci(self.data, method='pi', seed=self.seed)
-        np.testing.assert_array_almost_equal(results, results2)
+        assert_allclose(results, results2)
 
-class test_pval():
-    def setup(self):
-        self.seed = 123467890
+    def test_invalid_multi(self):
+        with pytest.raises(ValueError, match=r"Value `wrong` for multi is not recognized."):
+            boot.ci(self.data, multi="wrong")   # type: ignore
 
     def test_pval(self):
         rng = np.random.default_rng(seed=self.seed)
@@ -193,7 +202,7 @@ class test_pval():
 
         result = boot.pval(data, np.average, lambda s: 0.98544817 <=
                            s <= 1.06404872, n_samples=NS, seed=rng)
-        np.testing.assert_almost_equal(result, 0.95079, 3)
+        np.testing.assert_almost_equal(result, 0.8449, 3)
 
 if __name__ == "__main__":
     np.testing.run_module_suite()

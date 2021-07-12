@@ -34,6 +34,7 @@ setup(
           'Topic :: Scientific/Engineering',
           'Operating System :: OS Independent',
           ],
-    test_suite = "nose.collector"
+    tests_require=['pytest'],
+    setup_requires=['pytest-runner']
     # could also include long_description, download_url, classifiers, etc.
 )

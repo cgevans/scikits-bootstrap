@@ -5,11 +5,12 @@ lies satisfies some criteria, e.g. lies in some interval."""
 from __future__ import absolute_import, division, print_function
 
 from math import ceil, sqrt
+from typing import Sequence, cast, overload
 try:
-    from typing import Union, Literal, Callable, Any, Optional, Tuple, Iterable, List
+    from typing import Union, Literal, Callable, Any, Optional, Tuple, Iterable, Iterator, Protocol
 except:
-    from typing_extensions import Literal, Callable, Tuple
-    from typing import Union, Iterable, Any, Optional, List
+    from typing_extensions import Literal
+    from typing import Union, Iterable, Any, Optional, Iterator, Callable, Tuple
 import warnings
 from numpy.random import randint
 import numpy as np
@@ -17,33 +18,31 @@ import pyerf
 
 try:
     from numba import njit, prange
-
     NUMBA_AVAILABLE = True
-except:
+except ImportError:
     NUMBA_AVAILABLE = False
 
-    def njit(parallel, fastmath):
-        def decorator(func):
-            return func
 
-        return decorator
+#if False:  # for typing only
 
-    prange = range
+__all__ = ("ci", "pval", "bootstrap_indices", "bootstrap_indices_independent", 
+"subsample_indices", "jackknife_indices", "bootstrap_indices_moving_block")
 
+import pandas as pd
 
 s2 = sqrt(2)
 
 
-def _ncdf_py(x):
-    return 0.5*(1+pyerf.erf(x/s2))
+def _ncdf_py(x: float) -> float:
+    return 0.5*(1+cast(float, pyerf.erf(x/s2)))
 
 
-def _nppf_py(x):
-    return s2 * pyerf.erfinv(2*x-1)
+def _nppf_py(x: float) -> float:
+    return s2 * cast(float, pyerf.erfinv(2*x-1))
 
 
-nppf = np.vectorize(_nppf_py, [np.float])
-ncdf = np.vectorize(_ncdf_py, [np.float])
+nppf = np.vectorize(_nppf_py, [float])
+ncdf = np.vectorize(_ncdf_py, [float])
 
 
 __version__ = '1.1.0.dev2'
@@ -56,20 +55,88 @@ class InstabilityWarning(UserWarning):
 # On import, make sure that InstabilityWarnings are not filtered out.
 warnings.simplefilter('always', InstabilityWarning)
 
-StatFunctionType = Callable[..., Any]
+StatFunction = Callable[..., Any]
+
+StatFunctionWithWeights = StatFunction
+
+#class StatFunctionWithWeights(Protocol):
+#    def __call__(self, *args: Any, weights: np.ndarray = None) -> Any:
+#        ...
+
 DataType = Union[Tuple[np.ndarray, ...], np.ndarray]
+SeedType = Union[None, int, np.ndarray,
+                 np.random.SeedSequence, np.random.BitGenerator, np.random.Generator]
+
+@overload
+def ci(data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, 'pd.Series'],
+       statfunction: Optional[StatFunctionWithWeights] = None,
+       alpha: Union[float, Iterable[float]] = 0.05, n_samples: int = 10000, *,
+       method: Literal['abc'], 
+       output: Literal['lowhigh', 'errorbar'] = 'lowhigh',
+       epsilon: float = 0.001,
+       multi: Union[None, bool, Literal['independent'],
+                    Literal['paired']] = None,
+       return_dist: Literal[True],
+       seed: SeedType = None,
+       use_numba: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+       ...
 
 
-def ci(data: Union[Tuple[np.ndarray, ...], np.ndarray],
-       statfunction: Optional[StatFunctionType] = None,
+@overload
+def ci(data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, 'pd.Series'],
+       statfunction: Optional[StatFunctionWithWeights] = None,
+       alpha: Union[float, Iterable[float]] = 0.05, n_samples: int = 10000, *,
+       method: Literal['abc'], 
+       output: Literal['lowhigh', 'errorbar'] = 'lowhigh',
+       epsilon: float = 0.001,
+       multi: Union[None, bool, Literal['independent'],
+                    Literal['paired']] = None,
+       return_dist: Literal[False] = False,
+       seed: SeedType = None,
+       use_numba: bool = False) -> np.ndarray:
+       ...
+
+@overload
+def ci(data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, 'pd.Series'],
+       statfunction: Optional[StatFunction] = None,
+       alpha: Union[float, Iterable[float]] = 0.05, n_samples: int = 10000,
+       method: Literal['pi', 'bca'] = 'bca',
+       output: Literal['lowhigh', 'errorbar'] = 'lowhigh',
+       epsilon: float = 0.001,
+       multi: Union[None, bool, Literal['independent'],
+                    Literal['paired']] = None, *,
+       return_dist: Literal[True],
+       seed: SeedType = None,
+       use_numba: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+       ...
+
+
+@overload
+def ci(data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, 'pd.Series'],
+       statfunction: Optional[StatFunction] = None,
+       alpha: Union[float, Iterable[float]] = 0.05, n_samples: int = 10000,
+       method: Literal['pi', 'bca'] = 'bca',
+       output: Literal['lowhigh', 'errorbar'] = 'lowhigh',
+       epsilon: float = 0.001,
+       multi: Union[None, bool, Literal['independent'],
+                    Literal['paired']] = None,
+       return_dist: Literal[False] = False,
+       seed: SeedType = None,
+       use_numba: bool = False) -> np.ndarray:
+       ...
+
+
+def ci(data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, 'pd.Series'],
+       statfunction: Optional[Union[StatFunctionWithWeights, StatFunction]] = None,
        alpha: Union[float, Iterable[float]] = 0.05, n_samples: int = 10000,
        method: Literal['pi', 'bca', 'abc'] = 'bca',
        output: Literal['lowhigh', 'errorbar'] = 'lowhigh',
        epsilon: float = 0.001,
-       multi: Literal[None, False, True, 'independent', 'paired'] = None,
+       multi: Union[None, bool, Literal['independent'],
+                    Literal['paired']] = None,
        return_dist: Literal[False, True] = False,
-       seed=None,
-       _use_numba: bool = False):
+       seed: SeedType = None,
+       use_numba: bool = False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
 Given a set of data ``data``, and a statistics function ``statfunction`` that
 applies to that data, computes the bootstrap confidence interval for
@@ -199,7 +266,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
             "Value `{}` for multi is not recognized.".format(multi))
 
     if multi is None:
-        multi = bool(isinstance(data, Tuple))
+        multi = bool(isinstance(data, tuple))
 
     # Ensure that the data is actually an array. This isn't nice to pandas,
     # but pandas seems much much slower and the indices become a problem.
@@ -227,36 +294,43 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
                         "you can alternatively use statfunction=myfunction (without " +
                         "parentheses.")
 
+    assert statfunction is not None
+
     if method == 'abc':
         if return_dist:
             raise ValueError("The ABC method is being used, but return_dist=True. The distribution cannot be" +
                              "returned in this case, because the ABC method doesn't actually calculate it.")
-        return _ci_abc(tdata, statfunction, epsilon, alphas, output, multi)
+        return _ci_abc(tdata, cast(StatFunctionWithWeights, statfunction), epsilon, alphas, output, multi)
 
     if multi != 'independent':
-        if statfunction in (np.average, np.mean) and len(tdata) == 1 and NUMBA_AVAILABLE and _use_numba:
+        if statfunction in (np.average, np.mean) and len(tdata) == 1 and NUMBA_AVAILABLE and use_numba:
             # FIXME: better than nothing for now
             numba_seed = int(rng.integers(1_000_000))
             # Numba doesn't support generators.
             stat = _calculate_boostrap_mean_stat(tdata[0], n_samples, seed=numba_seed)
+        elif use_numba:
+            raise ValueError("Numba can't be used with these values currently.")
         else:
             bootindices = bootstrap_indices(tdata[0], n_samples, seed=rng)
             stat = np.array([statfunction(*(x[indices] for x in tdata))
                             for indices in bootindices])
     else:
-        bootindices = bootstrap_indices_independent(tdata, n_samples, seed=rng)
+        if use_numba:
+            raise NotImplementedError("Numba for independent data is not implemented, because the numba code does not support >1d data yet")
+        bootindices_ind = bootstrap_indices_independent(
+            tdata, n_samples, seed=rng)
         stat = np.array([statfunction(*(x[i] for x, i in zip(tdata, indices)))
-                         for indices in bootindices])
+                         for indices in bootindices_ind])
     stat.sort(axis=0)
 
     if method == 'pi':     # Percentile Interval Method
         avals = alphas
     elif method == 'bca':     # Bias-Corrected Accelerated Method
-        avals = _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi, _use_numba=_use_numba)
+        avals = _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi, use_numba=use_numba)
     else:
         raise ValueError("Method {0} is not supported.".format(method))
 
-    nvals = np.round((n_samples-1)*avals)
+    nvals: np.ndarray = np.round((n_samples-1)*avals)
 
     oldnperr = np.seterr(invalid='ignore')
     if np.any(np.isnan(nvals)):
@@ -278,7 +352,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     if output == 'lowhigh':
         if nvals.ndim == 1:
             # All nvals are the same. Simple broadcasting
-            out = stat[nvals]
+            out: np.ndarray = stat[nvals]
         else:
             # Nvals are different for each data point. Not simple broadcasting.
             # Each set of nvals along axis 0 corresponds to the data at the same
@@ -299,9 +373,10 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
         return out
 
 
-def _ci_abc(tdata, statfunction, epsilon, alphas, output, multi):
+def _ci_abc(tdata: Tuple[np.ndarray, ...], statfunction: StatFunctionWithWeights, epsilon: float, alphas: np.ndarray, output: Literal['lowhigh','errorbar'], 
+    multi: Literal[False, True, "independent", "paired"]) -> np.ndarray:
     if multi == 'independent':
-        raise ValueError(
+        raise NotImplementedError(
             "multi='independent' is not currently supported for ABC.")
     n = tdata[0].shape[0]*1.0
     nn = tdata[0].shape[0]
@@ -318,9 +393,9 @@ def _ci_abc(tdata, statfunction, epsilon, alphas, output, multi):
 
     di_full = I - p0
     tp = np.fromiter((statfunction(*tdata, weights=p0+ep*di)
-                      for di in di_full), dtype=np.float)
+                      for di in di_full), dtype=float)
     tm = np.fromiter((statfunction(*tdata, weights=p0-ep*di)
-                      for di in di_full), dtype=np.float)
+                      for di in di_full), dtype=float)
     t1 = (tp-tm)/(2*ep)
     t2 = (tp-2*t0+tm)/ep**2
 
@@ -335,19 +410,20 @@ def _ci_abc(tdata, statfunction, epsilon, alphas, output, multi):
     Z = z0+nppf(alphas)
     za = Z/(1-a*Z)**2
     # stan = t0 + sighat * nppf(alphas)
-    abc = np.zeros_like(alphas)
+    abc: np.ndarray = np.zeros_like(alphas)
     for i in range(0, len(alphas)):
         abc[i] = statfunction(*tdata, weights=p0+za[i]*delta)
 
     if output == 'lowhigh':
         return abc
     elif output == 'errorbar':
-        return abs(abc-statfunction(*tdata))[np.newaxis].T
+        return cast(np.ndarray, abs(abc-statfunction(*tdata))[np.newaxis].T)
 
     raise ValueError("Output option {0} is not supported.".format(output))
 
 
-def _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi, _use_numba=False):
+def _avals_bca(tdata: Tuple[np.ndarray, ...], statfunction: StatFunction, 
+               stat, alphas: np.ndarray, n_samples: int, multi, use_numba: bool=False) -> np.ndarray:
     # The value of the statistic function applied just to the actual data.
     ostat = statfunction(*tdata)
 
@@ -356,14 +432,14 @@ def _avals_bca(tdata, statfunction, stat, alphas, n_samples, multi, _use_numba=F
 
     # Statistics of the jackknife distribution
     if multi != 'independent':
-        if statfunction in (np.average, np.mean) and len(tdata) == 1 and NUMBA_AVAILABLE and _use_numba:
+        if statfunction in (np.average, np.mean) and len(tdata) == 1 and NUMBA_AVAILABLE and use_numba:
             jstat = _calculate_jackknife_mean_stat(tdata[0]).tolist()
         else:
             jstat = []
             for i in np.arange(0, len(tdata[0])):
                 jstat.append(statfunction(
                     *(np.concatenate((x[:i], x[i + 1:])) for x in tdata)))
-    else:
+    else:         
         jackindices = jackknife_indices_independent(tdata)
         jstat = np.array([statfunction(*(x[i] for x, i in zip(tdata, indices)))
                           for indices in jackindices])
@@ -387,31 +463,34 @@ be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
 
     return avals
 
+if NUMBA_AVAILABLE:
+    # These are excluded from coverage because they are run through Numba
+    # and coverage.py won't notice that.
 
-@njit(parallel=True, fastmath=True)
-def _calculate_jackknife_mean_stat(data: np.ndarray) -> np.ndarray:
-    n = data.shape[0]
-    jstat = np.zeros(n)
-    sum = data.sum()
-    for i in prange(n):
-        # Alternative solution, which can be used when we want use custom stat function
-        # jstat[i] = np.concatenate((data[:i], data[i+1:])).mean()
-        jstat[i] = (sum - data[i]) / (n - 1)
-    return jstat
-
-
-@njit(parallel=True, fastmath=True)
-def _calculate_boostrap_mean_stat(data: np.ndarray, n_samples: int, seed=None) -> np.ndarray:
-    n = data.shape[0]
-    stat = np.zeros(n_samples)
-    for i in prange(n_samples):
-        if seed is not None:
-            np.random.seed(seed + i)  # FIXME
-        stat[i] = np.random.choice(data, n).mean()
-    return stat
+    @njit(parallel=True, fastmath=True)
+    def _calculate_jackknife_mean_stat(data: np.ndarray) -> np.ndarray: # pragma: no cover
+        n = data.shape[0]
+        jstat = np.zeros(n)
+        sum = data.sum()
+        for i in prange(n):
+            # Alternative solution, which can be used when we want use custom stat function
+            # jstat[i] = np.concatenate((data[:i], data[i+1:])).mean()
+            jstat[i] = (sum - data[i]) / (n - 1)
+        return jstat
 
 
-def bootstrap_indices(data: np.ndarray, n_samples: int = 10000, seed=None):
+    @njit(parallel=True, fastmath=True)
+    def _calculate_boostrap_mean_stat(data: np.ndarray, n_samples: int, seed: Optional[int] = None) -> np.ndarray: # pragma: no cover
+        n = data.shape[0]
+        stat = np.zeros(n_samples)
+        for i in prange(n_samples):
+            if seed is not None:
+                np.random.seed(seed + i)  # FIXME
+            stat[i] = np.random.choice(data, n).mean()
+        return stat
+
+
+def bootstrap_indices(data: np.ndarray, n_samples: int = 10000, seed: SeedType = None) -> Iterator[np.ndarray]:
     """
 Given data points data, where axis 0 is considered to delineate points, return
 an generator for sets of bootstrap indices. This can be used as a list
@@ -423,14 +502,14 @@ of bootstrap indices (with list(bootstrap_indices(data))) as well.
         yield rng.integers(low=0, high=dlen, size=(dlen,))
 
 
-def bootstrap_indices_independent(data: Tuple[np.ndarray, ...], n_samples: int = 10000, seed=None):
+def bootstrap_indices_independent(data: Tuple[np.ndarray, ...], n_samples: int = 10000, seed: SeedType = None) -> Iterator[Tuple[np.ndarray, ...]]:
     rng = np.random.default_rng(seed=seed)
     dlens = [x.shape[0] for x in data]
     for _ in range(n_samples):
         yield tuple(rng.integers(low=0, high=dlen, size=(dlen,)) for dlen in dlens)
 
 
-def jackknife_indices(data: np.ndarray):
+def jackknife_indices(data: np.ndarray) -> Iterator[np.ndarray]:
     """
 Given data points data, where axis 0 is considered to delineate points, return
 a list of arrays where each array is a set of jackknife indices.
@@ -442,14 +521,14 @@ Y with the ith data point deleted.
     return (np.delete(base, i) for i in base)
 
 
-def jackknife_indices_independent(data: Tuple[np.ndarray, ...]):
+def jackknife_indices_independent(data: Tuple[np.ndarray, ...]) -> Iterator[Tuple[np.ndarray, ...]]:
     base = [np.arange(0, len(x)) for x in data]
     for i, b in enumerate(base):
         for j in base[i]:
             yield tuple(base[0:i] + [np.delete(b, j)] + base[i+1:])
 
 
-def subsample_indices(data: np.ndarray, n_samples: int = 1000, size: float = 0.5, seed=None):
+def subsample_indices(data: np.ndarray, n_samples: int = 1000, size: float = 0.5, seed: SeedType = None) -> np.ndarray:
     """
 Given data points data, where axis 0 is considered to delineate points, return
 a list of arrays where each array is indices a subsample of the data of size
@@ -466,15 +545,15 @@ samples)
         size = int(round(size*len(data)))
     elif size < 1:
         raise ValueError("size cannot be {0}".format(size))
-    base = np.tile(np.arange(len(data)), (n_samples, 1))
+    base: np.ndarray = np.tile(np.arange(len(data)), (n_samples, 1))
     for sample in base:
         rng.shuffle(sample)
-    return base[:, 0:size]
+    return base[:, 0:cast(int, size)]
 
 
 def bootstrap_indices_moving_block(data: np.ndarray, n_samples: int = 10000,
                                    block_length: int = 3, wrap: bool = False,
-                                   seed=None):
+                                   seed: SeedType = None) -> Iterator[np.ndarray]:
     """Generate moving-block bootstrap samples.
 
 Given data points `data`, where axis 0 is considered to delineate points,
@@ -512,9 +591,9 @@ around to the beginning of the data again.
             yield np.mod((blocks[:, None]+nexts).ravel()[:n_obs], n_obs)
 
 
-def pval(data: DataType, statfunction: StatFunctionType = np.average,
+def pval(data: DataType, statfunction: StatFunction = np.average,
          compfunction: Callable[[Any], bool] = lambda s: s > 0, n_samples: int = 10000,
-         multi: Optional[bool] = None, seed=None):
+         multi: Optional[bool] = None, seed: SeedType = None) -> 'np.number[Any]':
     """
 Given a set of data ``data``, a statistics function ``statfunction`` that
 applies to that data, and the criteriafunction ``compfunction``, computes the
@@ -555,7 +634,7 @@ Examples
 To calculate the confidence intervals for the mean of some numbers:
 
 >> boot.ci( np.randn(100), np.average )
-
+  
 Given some data points in arrays x and y calculate the confidence intervals
 for all linear regression coefficients simultaneously:
 
@@ -575,7 +654,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
     # but pandas seems much much slower and the indices become a problem.
     if not multi:
         data = np.array(data)
-        tdata = (data,)
+        tdata: Tuple[np.ndarray, ...] = (data,)
     else:
         tdata = tuple(np.array(x) for x in data)
 

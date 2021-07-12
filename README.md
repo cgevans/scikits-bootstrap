@@ -1,4 +1,3 @@
-[![Travis](https://travis-ci.org/cgevans/scikits-bootstrap.svg?branch=master)](https://travis-ci.org/cgevans/scikits-bootstrap)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3548989.svg)](https://doi.org/10.5281/zenodo.3548989)
 
 scikits-bootstrap

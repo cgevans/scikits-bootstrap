@@ -28,7 +28,8 @@ except ImportError:
 __all__ = ("ci", "pval", "bootstrap_indices", "bootstrap_indices_independent", 
 "subsample_indices", "jackknife_indices", "bootstrap_indices_moving_block")
 
-import pandas as pd
+if False:
+    import pandas as pd
 
 s2 = sqrt(2)
 

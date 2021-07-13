@@ -22,9 +22,6 @@ try:
 except ImportError:
     NUMBA_AVAILABLE = False
 
-
-#if False:  # for typing only
-
 __all__ = ("ci", "pval", "bootstrap_indices", "bootstrap_indices_independent", 
 "subsample_indices", "jackknife_indices", "bootstrap_indices_moving_block")
 
@@ -46,7 +43,7 @@ nppf = np.vectorize(_nppf_py, [float])
 ncdf = np.vectorize(_ncdf_py, [float])
 
 
-__version__ = '1.1.0.dev2'
+__version__ = '1.1.0.dev4'
 
 
 class InstabilityWarning(UserWarning):

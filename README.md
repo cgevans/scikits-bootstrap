@@ -3,7 +3,7 @@
 scikits-bootstrap
 =================
 
-Scikits.bootstrap provides bootstrap confidence interval algorithms for scipy.
+Scikits.bootstrap provides bootstrap confidence interval algorithms for Numpy/Scipy/Pandas.  It originally required scipy, but no longer needs it.
 
 It also provides an algorithm which estimates the probability that the statistics
 lies satisfies some criteria, e.g. lies in some interval.
@@ -24,7 +24,7 @@ be adding tests as well. I'm especially interested, however, in how the API
 should actually look; please let me know if you think the package should be
 organized differently.
 
-The package is licensed under the Modified BSD License. It is supported in part
+The package is licensed under the BSD 3-Clause License. It is supported in part
 by the Evans Foundation.
 
 Version Info
@@ -37,6 +37,16 @@ HEAD:   Randomness is now generated via a numpy.random Generator.  Anything
         that changes in Numpy's random number generation means this will not
         give the same results that would be obtained using `numpy.random.seed`
         to set the seed in previous versions.
+
+        Numba is now supported in some instances (np.average or np.mean as
+        statfunction, 1-D data), using use_numba=True.  Pypy3 is also supported.
+        Typing information has been added.
+
+        Handling of multiple data sets (tuples/etc of arrays) now can be specified
+        as multi="paired" (the previous handling), where the sets must be of the
+        same length, and samples are taken keeping corresponding points connected,
+        or multi="independent", treating data sets as independent and sampling them
+        seperately (in which case they may be different sizes).
 
 v1.0.1: Licensing information added.
 
@@ -61,7 +71,8 @@ v0.3.2: This version contains various fixes to allow compatibility with Python
 
 Installation and Usage
 ======================
-As described (<http://scikits.appspot.com/bootstrap>), the package can be installed using pip.
+
+scikits.bootstrap is tested on Python 3.6 - 3.9, and PyPy 3.  The package can be installed using pip.
 
 `pip install scikits.bootstrap`
 

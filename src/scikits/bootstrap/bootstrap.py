@@ -6,9 +6,10 @@ from __future__ import absolute_import, division, print_function
 
 from math import ceil, sqrt
 from typing import Sequence, cast, overload
-try:
+import sys
+if sys.version_info >= (3, 8):
     from typing import Union, Literal, Callable, Any, Optional, Tuple, Iterable, Iterator, Protocol
-except:
+else:
     from typing_extensions import Literal
     from typing import Union, Iterable, Any, Optional, Iterator, Callable, Tuple
 import warnings
@@ -465,7 +466,7 @@ if NUMBA_AVAILABLE:
     # These are excluded from coverage because they are run through Numba
     # and coverage.py won't notice that.
 
-    @njit(parallel=True, fastmath=True)
+    @njit(parallel=True, fastmath=True) # type: ignore
     def _calculate_jackknife_mean_stat(data: np.ndarray) -> np.ndarray: # pragma: no cover
         n = data.shape[0]
         jstat = np.zeros(n)
@@ -477,7 +478,7 @@ if NUMBA_AVAILABLE:
         return jstat
 
 
-    @njit(parallel=True, fastmath=True)
+    @njit(parallel=True, fastmath=True) # type: ignore
     def _calculate_boostrap_mean_stat(data: np.ndarray, n_samples: int, seed: Optional[int] = None) -> np.ndarray: # pragma: no cover
         n = data.shape[0]
         stat = np.zeros(n_samples)

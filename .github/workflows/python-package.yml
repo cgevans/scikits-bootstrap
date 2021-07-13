@@ -18,7 +18,9 @@ jobs:
         optionals: [none, pandas, numba]
         exclude:
           - python-version: pypy3
-            optionals: [pandas, numba]
+            optionals: pandas
+          - python-version: pypy3
+            optionals: numba
 
     steps:
     - uses: actions/checkout@v2

@@ -1,0 +1,20 @@
+[paths]
+source =
+    src
+    */site-packages
+
+[run]
+branch = true
+parallel = true
+source =
+    scikits
+    tests
+
+[report]
+show_missing = true
+precision = 2
+exclude_lines = 
+    pragma: no cover
+    @overload
+    @njit
+

@@ -375,7 +375,7 @@ Efron, An Introduction to the Bootstrap. Chapman & Hall 1993
 
 
 def _ci_abc(tdata: Tuple[np.ndarray, ...], statfunction: StatFunctionWithWeights, epsilon: float, alphas: np.ndarray, output: Literal['lowhigh','errorbar'], 
-    multi: Literal[False, True, "independent", "paired"]) -> np.ndarray:
+    multi: Union[bool, Literal["independent", "paired"]]) -> np.ndarray:
     if multi == 'independent':
         raise NotImplementedError(
             "multi='independent' is not currently supported for ABC.")
@@ -424,7 +424,7 @@ def _ci_abc(tdata: Tuple[np.ndarray, ...], statfunction: StatFunctionWithWeights
 
 
 def _avals_bca(tdata: Tuple[np.ndarray, ...], statfunction: StatFunction, 
-               stat, alphas: np.ndarray, n_samples: int, multi, use_numba: bool=False) -> np.ndarray:
+               stat: np.ndarray, alphas: np.ndarray, n_samples: int, multi: Union[bool, Literal['paired'], Literal['independent']], use_numba: bool=False) -> np.ndarray:
     # The value of the statistic function applied just to the actual data.
     ostat = statfunction(*tdata)
 
@@ -459,7 +459,7 @@ be inaccurate.".format(nanind), InstabilityWarning, stacklevel=2)
 
     zs = z0 + nppf(alphas).reshape(alphas.shape+(1,)*z0.ndim)
 
-    avals = ncdf(z0 + zs/(1-a*zs))
+    avals: np.ndarray = ncdf(z0 + zs/(1-a*zs))
     np.seterr(**oldnperr)
 
     return avals
@@ -549,7 +549,7 @@ samples)
     base: np.ndarray = np.tile(np.arange(len(data)), (n_samples, 1))
     for sample in base:
         rng.shuffle(sample)
-    return base[:, 0:cast(int, size)]
+    return cast(np.ndarray, base[:, 0:cast(int, size)])
 
 
 def bootstrap_indices_moving_block(data: np.ndarray, n_samples: int = 10000,
@@ -593,7 +593,7 @@ around to the beginning of the data again.
 
 
 def pval(data: DataType, statfunction: StatFunction = np.average,
-         compfunction: Callable[[Any], bool] = lambda s: s > 0, n_samples: int = 10000,
+         compfunction: Callable[[Any], bool] = lambda s: cast(bool, s > 0), n_samples: int = 10000,
          multi: Optional[bool] = None, seed: SeedType = None) -> 'np.number[Any]':
     """
 Given a set of data ``data``, a statistics function ``statfunction`` that

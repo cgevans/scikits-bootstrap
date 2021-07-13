@@ -1,5 +1,3 @@
-from __future__ import division
-
 import scikits.bootstrap as boot
 import numpy as np
 from numpy.testing import assert_raises, assert_allclose
@@ -204,5 +202,3 @@ class TestCI:
                            s <= 1.06404872, n_samples=NS, seed=rng)
         np.testing.assert_almost_equal(result, 0.8449, 3)
 
-if __name__ == "__main__":
-    np.testing.run_module_suite()

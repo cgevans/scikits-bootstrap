@@ -61,7 +61,7 @@ nppf = np.vectorize(_nppf_py, [float])
 ncdf = np.vectorize(_ncdf_py, [float])
 
 
-__version__ = "1.1.0.dev4"
+__version__ = "1.1.0-pre.1"
 
 
 class InstabilityWarning(UserWarning):

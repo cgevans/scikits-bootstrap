@@ -1,3 +1,5 @@
+from typing import Any, Sequence
+
 import scikits.bootstrap as boot
 import numpy as np
 from numpy.testing import assert_raises, assert_allclose
@@ -115,10 +117,14 @@ class TestCI:
 
     # I can't actually figure out how to make this work right now...
     #    def test_abc_epsilon(self) -> None:
-    #        results = boot.ci_abc(self.data,lambda x,y: np.sum(y*np.sin(100*x))/np.sum(y),alpha=(0.1,0.2,0.8,0.9))
-    #        assert_allclose(results,np.array([-0.11925356, -0.03973595,  0.24915691,  0.32083297]))
-    #        results = boot.ci_abc(self.data,lambda x,y: np.sum(y*np.sin(100*x))/np.sum(y),alpha=(0.1,0.2,0.8,0.9),epsilon=20000.5)
-    #        assert_allclose(results,np.array([-0.11925356, -0.03973595,  0.24915691,  0.32083297]))
+    #        results = boot.ci_abc(self.data,lambda x,y: np.sum(y*np.sin(100*x))/
+    # np.sum(y),alpha=(0.1,0.2,0.8,0.9))
+    #        assert_allclose(results,np.array([-0.11925356, -0.03973595,
+    # 0.24915691,  0.32083297]))
+    #        results = boot.ci_abc(self.data,lambda x,y: np.sum(y*np.sin(100*x))/
+    # np.sum(y),alpha=(0.1,0.2,0.8,0.9),epsilon=20000.5)
+    #        assert_allclose(results,np.array([-0.11925356, -0.03973595,
+    # 0.24915691,  0.32083297]))
 
     def test_pi_multialpha(self) -> None:
         results = boot.ci(
@@ -140,6 +146,13 @@ class TestCI:
             results_errorbar.T, abs(np.average(self.data) - results_default)[np.newaxis]
         )
 
+    def test_abc_errorbar_output_simple(self) -> None:
+        results_default = boot.ci(self.data, method="abc")
+        results_errorbar = boot.ci(self.data, output="errorbar", method="abc")
+        assert_allclose(
+            results_errorbar.T, abs(np.average(self.data) - results_default)[np.newaxis]
+        )
+
     def test_bca_multialpha(self) -> None:
         results = boot.ci(self.data, alpha=(0.1, 0.2, 0.8, 0.9), seed=self.seed)
         assert_allclose(
@@ -147,9 +160,12 @@ class TestCI:
         )
 
     def test_bca_multi_multialpha(self) -> None:
+        def statfun(a: Sequence[Any], b: Sequence[Any]) -> Any:
+            return np.polyfit(a, b, 1)
+
         results1 = boot.ci(
             (self.x, self.y),
-            lambda a, b: np.polyfit(a, b, 1),
+            statfun,
             alpha=(0.1, 0.2, 0.8, 0.9),
             n_samples=1000,
             seed=self.seed,
@@ -161,7 +177,16 @@ class TestCI:
             n_samples=1000,
             seed=self.seed,
         )
+        results3 = boot.ci(
+            (self.x, self.y),
+            statfun,
+            alpha=(0.1, 0.2, 0.8, 0.9),
+            n_samples=1000,
+            seed=self.seed,
+            output="errorbar",
+        )
         assert_allclose(results1, results2)
+        assert_allclose(np.abs(statfun(self.x, self.y) - results1), results3.T)
 
     def test_bca_multi_indep(self) -> None:
         results1 = boot.ci(
@@ -169,7 +194,19 @@ class TestCI:
             lambda a, b: np.average(a) - np.average(b),
             n_samples=1000,
             multi="independent",
+            seed=self.seed,
         )
+        assert_allclose(results1, np.array([2.547619, 7.97619]))
+
+    def test_bca_multi_unequal_paired(self) -> None:
+        with pytest.raises(ValueError):
+            boot.ci(
+                (self.x, self.z),
+                lambda a, b: np.average(a) - np.average(b),
+                n_samples=1000,
+                multi="paired",
+                seed=self.seed,
+            )
 
     def test_bca_multi_2dout_multialpha(self) -> None:
         results1 = boot.ci(
@@ -205,6 +242,14 @@ class TestCI:
             n_samples=1000,
             multi="indepedent",
         )
+
+    def test_non_callable(self) -> None:
+        with pytest.raises(TypeError):
+            boot.ci(self.data, "average")  # type: ignore
+
+    def test_abc_with_returndist(self) -> None:
+        with pytest.raises(ValueError):
+            ci, dist = boot.ci(self.data, method="abc", return_dist=True)
 
     def test_pi_multi_2dout_multialpha(self) -> None:
         results1 = boot.ci(
@@ -274,25 +319,30 @@ class TestCI:
             boot.ci(self.data, multi="wrong")  # type: ignore
 
     def test_pval(self) -> None:
-        rng = np.random.default_rng(seed=self.seed)
-        mu = 1
-        s2 = 2
-        N = 10000
-        NS = 10000
-
-        data = rng.normal(mu, s2, N)
-
-        # print "Dist Normal(%.1f, %.1f)" % (mu,s2)
-        # print "Analytic CI: ", [np.average(data) - 1.96 * np.sqrt(np.var(data)) / np.sqrt(N), np.average(data) + 1.96 * np.sqrt(np.var(data)) / np.sqrt(N) ]
-        # print "Bootstrap CI:", list(bs.ci(data, np.average, n_samples = NS))
-
-        # print "P(np.average is in 95% CI):", bs.pval(data, np.average, lambda s: 0.98544817 <= s <= 1.06404872, n_samples=NS)
-
         result = boot.pval(
-            data,
+            self.data,
             np.average,
-            lambda s: 0.98544817 <= s <= 1.06404872,
-            n_samples=NS,
-            seed=rng,
+            lambda s: 0.8 <= s <= 1.2,
+            n_samples=500,
+            seed=self.seed,
         )
-        np.testing.assert_almost_equal(result, 0.8449, 3)
+        assert_allclose(result, 0.368)
+
+    def test_pval_implicit_and_explicit_multi(self) -> None:
+        result = boot.pval(
+            (self.x, self.y),
+            lambda x, y: np.array([np.average(x), np.average(y)]),
+            lambda s: s <= 3,
+            n_samples=500,
+            seed=self.seed,
+        )
+        result2 = boot.pval(
+            (self.x, self.y),
+            lambda x, y: np.array([np.average(x), np.average(y)]),
+            lambda s: s <= 3,
+            n_samples=500,
+            seed=self.seed,
+            multi=True,
+        )
+        assert_allclose(result, [0.262, 0.936])
+        assert_allclose(result, result2)

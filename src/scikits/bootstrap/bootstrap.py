@@ -18,13 +18,11 @@ if sys.version_info >= (3, 8):
         Tuple,
         Iterable,
         Iterator,
-        Protocol,
     )
 else:
     from typing_extensions import Literal
     from typing import Union, Iterable, Any, Optional, Iterator, Callable, Tuple
 import warnings
-from numpy.random import randint
 import numpy as np
 import pyerf
 
@@ -81,7 +79,7 @@ StatFunctionWithWeights = StatFunction
 #    def __call__(self, *args: Any, weights: np.ndarray = None) -> Any:
 #        ...
 
-DataType = Union[Tuple[np.ndarray, ...], np.ndarray]
+DataType = Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, "pd.Series"]
 SeedType = Union[
     None,
     int,
@@ -94,7 +92,7 @@ SeedType = Union[
 
 @overload
 def ci(
-    data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, "pd.Series"],
+    data: DataType,
     statfunction: Optional[StatFunctionWithWeights] = None,
     alpha: Union[float, Iterable[float]] = 0.05,
     n_samples: int = 10000,
@@ -112,7 +110,7 @@ def ci(
 
 @overload
 def ci(
-    data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, "pd.Series"],
+    data: DataType,
     statfunction: Optional[StatFunctionWithWeights] = None,
     alpha: Union[float, Iterable[float]] = 0.05,
     n_samples: int = 10000,
@@ -130,7 +128,7 @@ def ci(
 
 @overload
 def ci(
-    data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, "pd.Series"],
+    data: DataType,
     statfunction: Optional[StatFunction] = None,
     alpha: Union[float, Iterable[float]] = 0.05,
     n_samples: int = 10000,
@@ -148,7 +146,7 @@ def ci(
 
 @overload
 def ci(
-    data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, "pd.Series"],
+    data: DataType,
     statfunction: Optional[StatFunction] = None,
     alpha: Union[float, Iterable[float]] = 0.05,
     n_samples: int = 10000,
@@ -164,7 +162,7 @@ def ci(
 
 
 def ci(
-    data: Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, "pd.Series"],
+    data: DataType,
     statfunction: Optional[Union[StatFunctionWithWeights, StatFunction]] = None,
     alpha: Union[float, Iterable[float]] = 0.05,
     n_samples: int = 10000,
@@ -205,7 +203,7 @@ def ci(
         intervals. If it is an iterable, alpha is assumed to be an iterable of
         each desired percentile.
     n_samples: float, optional
-        The number of bootstrap samples to use (default=10000)
+        The number of bootstrap samples to use (default=10_000)
     method: string, optional
         The method to use: one of 'pi', 'bca', or 'abc' (default='bca')
     output: string, optional
@@ -219,8 +217,8 @@ def ci(
         If False, assume data is a single array. If True or "paired",
         assume data is a tuple/other iterable of arrays of the same length that
         should be sampled together (eg, values in each array at a particular index are
-        linked in some way). If None, decide based on whether the data is an
-        actual tuple.  If "independent", sample the tuple of arrays separately.
+        linked in some way). If None, "paired" is used if data is an actual
+        tuple, and False otherwise.  If "independent", sample the tuple of arrays separately.
         For True/"paired", each array must be the same length. (default=None)
 
         An example of a situation where True/"paired" might be useful is if you have
@@ -431,11 +429,11 @@ def ci(
             out = stat[(nvals, np.indices(nvals.shape)[1:].squeeze())]
     elif output == "errorbar":
         if nvals.ndim == 1:
-            out = abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T
+            out = np.abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T
         else:
-            out = abs(
+            out = np.abs(
                 statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]
-            )[np.newaxis].T
+            ).T.squeeze()
     else:
         raise ValueError("Output option {0} is not supported.".format(output))
 
@@ -460,7 +458,7 @@ def _ci_abc(
     n = tdata[0].shape[0] * 1.0
     nn = tdata[0].shape[0]
 
-    I = np.identity(nn)
+    Imatrix = np.identity(nn)
     ep = epsilon / n * 1.0
     p0 = np.repeat(1.0 / n, nn)
 
@@ -469,7 +467,7 @@ def _ci_abc(
     except TypeError as e:
         raise TypeError("statfunction does not accept correct arguments for ABC") from e
 
-    di_full = I - p0
+    di_full = Imatrix - p0
     tp = np.fromiter(
         (statfunction(*tdata, weights=p0 + ep * di) for di in di_full), dtype=float
     )
@@ -716,15 +714,15 @@ def bootstrap_indices_moving_block(
 def pval(
     data: DataType,
     statfunction: StatFunction = np.average,
-    compfunction: Callable[[Any], bool] = lambda s: cast(bool, s > 0),
+    compfunction: Callable[[Any], Any] = lambda s: cast(bool, s > 0),
     n_samples: int = 10000,
     multi: Optional[bool] = None,
     seed: SeedType = None,
-) -> "np.number[Any]":
+) -> "Union[np.number[Any], np.ndarray]":
     """
     Given a set of data ``data``, a statistics function ``statfunction`` that
-    applies to that data, and the criteriafunction ``compfunction``, computes the
-    bootstrap probability thatthe statistics function ``statfunction`` on that data
+    applies to that data, and the criteria function ``compfunction``, computes the
+    bootstrap probability that the statistics function ``statfunction`` on that data
     satisfies the the criteria function ``compfunction``. Data points are assumed to
     be delineated by axis 0.
 
@@ -742,9 +740,10 @@ def pval(
         to these samples individually.
     compfunction: function (stat) -> True or False
         This function should accept result of the statfunction computed on the samples of
-        data from ``data``. It is applied to these results individually.
+        data from ``data``. It is applied to these results individually.  The default
+        tests for each element of statfunction output being > 0.
     n_samples: float, optional
-        The number of bootstrap samples to use (default=10000)
+        The number of bootstrap samples to use (default=10_000).
     multi: boolean, optional
         If False, assume data is a single array. If True, assume data is a tuple/other
         iterable of arrays of the same length that should be sampled together. If None,
@@ -755,17 +754,6 @@ def pval(
     probability: a float
         The probability that the statistics defined by the statfunction satisfies the
         criteria defined by the compfunction.
-
-    Examples
-    --------
-    To calculate the confidence intervals for the mean of some numbers:
-
-    >> boot.ci( np.randn(100), np.average )
-
-    Given some data points in arrays x and y calculate the confidence intervals
-    for all linear regression coefficients simultaneously:
-
-    >> boot.ci( (x,y), scipy.stats.linregress )
 
     References
     ----------
@@ -796,4 +784,4 @@ def pval(
 
     pval_stat = [compfunction(s) for s in stat]
     # print pval_stat
-    return np.mean(pval_stat)
+    return cast("Union[np.number[Any], np.ndarray]", np.mean(pval_stat, axis=0))

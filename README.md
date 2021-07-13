@@ -1,4 +1,10 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3548989.svg)](https://doi.org/10.5281/zenodo.3548989)
+![Codecov](https://img.shields.io/codecov/c/github/cgevans/scikits-bootstrap)
+![PyPI](https://img.shields.io/pypi/v/scikits-bootstrap)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cgevans/scikits-bootstrap)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/scikits-bootstrap)
+
+
 
 scikits-bootstrap
 =================
@@ -30,7 +36,7 @@ by the Evans Foundation.
 Version Info
 ============
 
-HEAD:   Randomness is now generated via a numpy.random Generator.  Anything
+- HEAD: Randomness is now generated via a numpy.random Generator.  Anything
         that relied on using numpy.random.seed to obtain deterministic results
         will fail (mostly of relevance for testing).  Seeds (or Generators) can
         now be passed to relevant functions with the `seed` argument, but note
@@ -38,29 +44,29 @@ HEAD:   Randomness is now generated via a numpy.random Generator.  Anything
         give the same results that would be obtained using `numpy.random.seed`
         to set the seed in previous versions.
 
-        Numba is now supported in some instances (np.average or np.mean as
-        statfunction, 1-D data), using use_numba=True.  Pypy3 is also supported.
-        Typing information has been added.
+  Numba is now supported in some instances (np.average or np.mean as
+  statfunction, 1-D data), using use_numba=True.  Pypy3 is also supported.
+  Typing information has been added.
 
-        Handling of multiple data sets (tuples/etc of arrays) now can be specified
+  Handling of multiple data sets (tuples/etc of arrays) now can be specified
         as multi="paired" (the previous handling), where the sets must be of the
         same length, and samples are taken keeping corresponding points connected,
         or multi="independent", treating data sets as independent and sampling them
         seperately (in which case they may be different sizes).
 
-v1.0.1: Licensing information added.
+- v1.0.1: Licensing information added.
 
-v1.0.0: scikits.bootstrap now uses pyerf, which means that it doesn't actually
+- v1.0.0: scikits.bootstrap now uses pyerf, which means that it doesn't actually
         need scipy at all.  It should work with PyPy, has some improved error
         and warning messages, and should be a bit faster in many cases.  The old
         ci_abc function has been removed: use method='abc' instead.
 
-v0.3.3: Bug fixes.  Warnings have been cleaned up, and are implemented for BCa
+- v0.3.3: Bug fixes.  Warnings have been cleaned up, and are implemented for BCa
         when all statistic values are equal (a common confusion in prior versions).
         Related numpy warnings are now suppressed.  Some tests on Python 2 were
         fixed, and the PyPI website link is now correct.
 
-v0.3.2: This version contains various fixes to allow compatibility with Python
+- v0.3.2: This version contains various fixes to allow compatibility with Python
         3.3. While I have not used the package extensively with Python 3, all
         tests now pass, and importing works properly. The compatibility changes
         slightly modify the output of bootstrap_indexes, from a Python list to

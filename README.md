@@ -1,15 +1,17 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3548989.svg)](https://doi.org/10.5281/zenodo.3548989)
 [![Codecov](https://img.shields.io/codecov/c/github/cgevans/scikits-bootstrap)](https://codecov.io/gh/cgevans/scikits-bootstrap)
 [![PyPI](https://img.shields.io/pypi/v/scikits-bootstrap)](https://pypi.org/project/scikits.bootstrap/)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cgevans/scikits-bootstrap)]
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cgevans/scikits-bootstrap)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/scikits-bootstrap)
+
+
+Documentation: [Stable](https://scikits-bootstrap.readthedocs.io/en/stable/), [Latest](https://scikits-bootstrap.readthedocs.io/en/latest/).
 
 scikits-bootstrap
 =================
 
-Scikits.bootstrap provides bootstrap confidence interval algorithms for
-Numpy/Scipy/Pandas. It originally required scipy, but no longer needs
-it.
+Scikits.bootstrap provides bootstrap statistics confidence interval algorithms
+for Numpy/Scipy/Pandas. It originally required scipy, but no longer needs it.
 
 It also provides an algorithm which estimates the probability that the
 statistics lies satisfies some criteria, e.g. lies in some interval.

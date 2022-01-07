@@ -18,13 +18,17 @@ if sys.version_info >= (3, 8):
         Tuple,
         Iterable,
         Iterator,
+        TYPE_CHECKING,
     )
 else:
-    from typing_extensions import Literal
+    from typing_extensions import Literal, TYPE_CHECKING
     from typing import Union, Iterable, Any, Optional, Iterator, Callable, Tuple
 import warnings
 import numpy as np
 import pyerf
+
+if TYPE_CHECKING:  # pragma: no cover
+    import pandas
 
 try:
     from numba import njit, prange
@@ -61,7 +65,7 @@ nppf = np.vectorize(_nppf_py, [float])
 ncdf = np.vectorize(_ncdf_py, [float])
 
 
-__version__ = "1.1.0-pre.1"
+__version__ = "1.1.0-pre.2"
 
 
 class InstabilityWarning(UserWarning):
@@ -79,7 +83,9 @@ StatFunctionWithWeights = StatFunction
 #    def __call__(self, *args: Any, weights: np.ndarray = None) -> Any:
 #        ...
 
-DataType = Union[Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, "pd.Series"]
+DataType = Union[
+    Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, "pandas.Series"
+]
 SeedType = Union[
     None,
     int,
@@ -231,14 +237,14 @@ def ci(
         An example of where "independent" might be useful is if you have an array of values
         x and an array of values y, and you want a confidence interval for the difference
         of the averages of the values in each, eg
-        `boot.ci((x,y), lambda a,b: np.average(a)-np.average(b), multi="independent")`.
+        `boot.ci((x,y), lambda a,b: np.average(a)-np.average(b), multi="independent")` .
         Here, you don't care about maintaining the link between each value in x and y, and
         treat them separately.  This is equivalent to taking bootstrap samples of x and
         y separately, and then running the statistic function on those bootstrap samples.
     return_dist: boolean, optional
         Whether to return the bootstrap distribution along with the confidence
         intervals. Defaults to ``False``.  Note that, as the 'abc' method does not actually
-        calculate the bootstrap distribution, `method='abc'` conflicts with `return_dist=True`.
+        calculate the bootstrap distribution, `method='abc'` conflicts with `return_dist=True` .
 
     Returns
     -------

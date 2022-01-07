@@ -27,3 +27,7 @@ htmlcov
 
 #Mr Developer
 .mr.developer.cfg
+
+docs/build
+coverage.xml
+.vscode

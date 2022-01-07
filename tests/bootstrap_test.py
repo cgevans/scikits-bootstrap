@@ -5,6 +5,8 @@ import numpy as np
 from numpy.testing import assert_raises, assert_allclose
 import pytest
 
+from scikits.bootstrap.bootstrap import InstabilityWarning
+
 try:
     import pandas as pd
 
@@ -55,6 +57,14 @@ class TestCI:
         with_numba = boot.ci(dat, n_samples=100000, use_numba=True)
         assert_allclose(no_numba, with_numba, rtol=1e-2)
 
+    def test_invalid_method(self) -> None:
+        with pytest.raises(ValueError, match=r"Method invalid is not supported"):
+            boot.ci(self.data, method="invalid")  # type: ignore
+
+    def test_invalid_output(self) -> None:
+        with pytest.raises(ValueError, match=r"Output option invalid is not supported"):
+            boot.ci(self.data, output="invalid")  # type: ignore
+
     @pytest.mark.skipif(boot.bootstrap.NUMBA_AVAILABLE, reason="Numba is available")
     def test_numba_unavailable(self) -> None:
         with pytest.raises(ValueError):
@@ -86,6 +96,17 @@ class TestCI:
             indices, np.array([[0, 1, 2, 1, 2], [0, 1, 2, 0, 1], [1, 2, 3, 1, 2]])
         )
 
+    def test_bootstrap_indices_moving_block_wrap(self) -> None:
+        indices = np.array(
+            [
+                x
+                for x in boot.bootstrap_indices_moving_block(
+                    np.array([1, 2, 3, 4]), n_samples=3, seed=self.seed, wrap=True
+                )
+            ]
+        )
+        assert_allclose(indices, np.array([[1, 2, 3, 2], [0, 1, 2, 0], [2, 3, 0, 2]]))
+
     def test_jackknife_indices(self) -> None:
         indices = np.array([x for x in boot.jackknife_indices(np.array([1, 2, 3]))])
         assert_allclose(indices, np.array([[1, 2], [0, 2], [0, 1]]))
@@ -96,12 +117,25 @@ class TestCI:
         for x in indices:
             np.testing.assert_(len(np.unique(x)) == len(self.data) / 2)
 
+    def test_subsample_indices_fixed(self) -> None:
+        indices = boot.subsample_indices(self.data, 1000, 10)
+        for x in indices:
+            assert len(np.unique(x)) == 10
+
+    def test_subsample_size_too_large(self) -> None:
+        with pytest.raises(ValueError):
+            indices = boot.subsample_indices(self.data, 1000, 30)
+
     def test_subsample_indices_notsame(self) -> None:
         indices = boot.subsample_indices(np.arange(0, 50), 1000, -1)
         # Test to make sure that subsamples are not all the same.
         # In theory, this test could fail even with correct code, but in
         # practice the probability is too low to care, and the test is useful.
         np.testing.assert_(not np.all(indices[0] == indices[1:]))
+
+    def test_subsample_invalid_size(self) -> None:
+        with pytest.raises(ValueError, match="size cannot be -5"):
+            boot.subsample_indices(self.data, size=-5)
 
     def test_abc_simple(self) -> None:
         results = boot.ci(self.data, method="abc", seed=self.seed)
@@ -134,6 +168,13 @@ class TestCI:
             results, np.array([0.401879, 0.517506, 0.945416, 1.052798]), rtol=1e-6
         )
 
+    def test_dist(self) -> None:
+        out, dist = boot.ci(
+            self.data, return_dist=True, method="pi", alpha=[0.1, 0.9], n_samples=100
+        )
+        assert out[0] == dist[10]
+        assert out[1] == dist[89]
+
     def test_bca_simple(self) -> None:
         results = boot.ci(self.data, seed=self.seed)
         results2 = boot.ci(self.data, alpha=(0.025, 1 - 0.025), seed=self.seed)
@@ -152,6 +193,14 @@ class TestCI:
         assert_allclose(
             results_errorbar.T, abs(np.average(self.data) - results_default)[np.newaxis]
         )
+
+    def test_abc_errorbar_unsupported(self) -> None:
+        with pytest.raises(ValueError, match="Output option invalid is not"):
+            boot.ci(self.data, output="invalid", method="abc")  # type: ignore
+
+    def test_errorbar_unsupported(self) -> None:
+        with pytest.raises(ValueError, match="Output option invalid is not"):
+            boot.ci(self.data, output="invalid")  # type: ignore
 
     def test_bca_multialpha(self) -> None:
         results = boot.ci(self.data, alpha=(0.1, 0.2, 0.8, 0.9), seed=self.seed)
@@ -198,7 +247,33 @@ class TestCI:
         )
         assert_allclose(results1, np.array([2.547619, 7.97619]))
 
-    def test_bca_multi_unequal_paired(self) -> None:
+    def test_allequal_warn(self) -> None:
+        with pytest.warns(InstabilityWarning, match="NaN"):
+            boot.ci(np.ones(20), seed=self.seed)
+
+    def test_extremal_warn(self) -> None:
+        with pytest.warns(InstabilityWarning, match="extremal"):
+            boot.ci([1, 2], n_samples=10, seed=self.seed)
+
+    def test_10_warn(self) -> None:
+        with pytest.warns(InstabilityWarning, match="top 10"):
+            boot.ci(np.arange(1, 20), n_samples=50, seed=self.seed)
+
+    def test_numba_no_indep(self) -> None:
+        with pytest.raises(NotImplementedError, match="Numba for independent data"):
+            boot.ci((self.x, self.y), multi="independent", use_numba=True)
+
+    def test_abc_no_indep(self) -> None:
+        with pytest.raises(NotImplementedError, match="not currently supported"):
+            boot.ci((self.x, self.y), multi="independent", method="abc")
+
+    def test_abc_no_weights(self) -> None:
+        with pytest.raises(
+            TypeError, match="statfunction does not accept correct arguments"
+        ):
+            boot.ci(self.x, lambda x: np.average(x), method="abc")  # pragma: no cover
+
+    def test_bca_multi_unequal_paired(self) -> None:  # pragma: no cover
         with pytest.raises(ValueError):
             boot.ci(
                 (self.x, self.z),
@@ -233,7 +308,7 @@ class TestCI:
         assert_allclose(results1[:, 0], results2)
         assert_allclose(results1[:, 1], results3)
 
-    def test_multi_fail(self) -> None:
+    def test_multi_fail(self) -> None:  # pragma: no cover
         assert_raises(
             ValueError,
             boot.ci,
@@ -321,12 +396,19 @@ class TestCI:
     def test_pval(self) -> None:
         result = boot.pval(
             self.data,
-            np.average,
-            lambda s: 0.8 <= s <= 1.2,
+            compfunction=lambda s: 0.8 <= s <= 1.2,
             n_samples=500,
             seed=self.seed,
         )
         assert_allclose(result, 0.368)
+
+    def test_pval_default(self) -> None:
+        result = boot.pval(
+            self.z,
+            n_samples=500,
+            seed=self.seed,
+        )
+        assert_allclose(result, 0.096)
 
     def test_pval_implicit_and_explicit_multi(self) -> None:
         result = boot.pval(

@@ -13,12 +13,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.7, 3.8, 3.9, pypy3]
+        python-version: [3.7, 3.8, 3.9, "3.10", pypy3]
         optionals: [none, pandas, numba]
         exclude:
           - python-version: pypy3
             optionals: pandas
           - python-version: pypy3
+            optionals: numba
+          - python-version: "3.10"
             optionals: numba
           - os: macos-latest
             python-version: pypy3

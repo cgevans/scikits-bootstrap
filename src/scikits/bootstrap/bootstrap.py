@@ -8,6 +8,9 @@ from math import ceil, sqrt
 from typing import Sequence, cast, overload
 import sys
 
+import numpy as np
+
+
 if sys.version_info >= (3, 8):
     from typing import (
         Union,
@@ -18,17 +21,15 @@ if sys.version_info >= (3, 8):
         Tuple,
         Iterable,
         Iterator,
+        Type,
         TYPE_CHECKING,
     )
 else:
     from typing_extensions import Literal, TYPE_CHECKING
     from typing import Union, Iterable, Any, Optional, Iterator, Callable, Tuple
-import warnings
-import numpy as np
-import pyerf
 
-if TYPE_CHECKING:  # pragma: no cover
-    import pandas
+import warnings
+import pyerf
 
 try:
     from numba import njit, prange
@@ -36,6 +37,22 @@ try:
     NUMBA_AVAILABLE = True
 except ImportError:
     NUMBA_AVAILABLE = False
+
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+
+    NDArrayAny: TypeAlias = "np.ndarray[Any, np.dtype[Any]]"
+    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.float_]]"
+elif sys.version_info >= (3, 9):
+    NDArrayAny = "np.ndarray[Any, np.dtype[Any]]"
+    NDArrayFloat = "np.ndarray[Any, np.dtype[np.float_]]"
+else:
+    NDArrayAny = "np.ndarray"
+    NDArrayFloat = "np.ndarray"
+
+if TYPE_CHECKING:  # pragma: no cover
+    import pandas
+
 
 __all__ = (
     "ci",
@@ -80,16 +97,18 @@ StatFunction = Callable[..., Any]
 StatFunctionWithWeights = StatFunction
 
 # class StatFunctionWithWeights(Protocol):
-#    def __call__(self, *args: Any, weights: np.ndarray = None) -> Any:
+#    def __call__(self, *args: Any, weights: NDArrayAny = None) -> Any:
 #        ...
 
 DataType = Union[
-    Tuple[Union[np.ndarray, Sequence[Any]], ...], np.ndarray, "pandas.Series"
+    "Tuple[Union[NDArrayAny, Sequence[Any]], ...]",
+    "NDArrayAny",
+    "pandas.Series",
 ]
 SeedType = Union[
     None,
     int,
-    np.ndarray,
+    "NDArrayAny",
     np.random.SeedSequence,
     np.random.BitGenerator,
     np.random.Generator,
@@ -110,7 +129,7 @@ def ci(
     return_dist: Literal[True],
     seed: SeedType = None,
     use_numba: bool = False,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> "Tuple[NDArrayAny, NDArrayAny]":
     ...
 
 
@@ -128,7 +147,7 @@ def ci(
     return_dist: Literal[False] = False,
     seed: SeedType = None,
     use_numba: bool = False,
-) -> np.ndarray:
+) -> "NDArrayAny":
     ...
 
 
@@ -146,7 +165,7 @@ def ci(
     return_dist: Literal[True],
     seed: SeedType = None,
     use_numba: bool = False,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> "Tuple[NDArrayAny, NDArrayAny]":
     ...
 
 
@@ -163,7 +182,7 @@ def ci(
     return_dist: Literal[False] = False,
     seed: SeedType = None,
     use_numba: bool = False,
-) -> np.ndarray:
+) -> "NDArrayAny":
     ...
 
 
@@ -179,7 +198,10 @@ def ci(
     return_dist: Literal[False, True] = False,
     seed: SeedType = None,
     use_numba: bool = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+) -> """Union[
+    NDArrayAny,
+    Tuple[NDArrayAny, NDArrayAny],
+]""":
     """
     Given a set of data ``data``, and a statistics function ``statfunction`` that
     applies to that data, computes the bootstrap confidence interval for
@@ -296,7 +318,7 @@ def ci(
 
     # Deal with the alpha values
     if isinstance(alpha, Iterable):
-        alphas = np.array(alpha)
+        alphas: "NDArrayFloat" = np.array(alpha)
     else:
         alphas = np.array([alpha / 2, 1 - alpha / 2])
 
@@ -313,7 +335,7 @@ def ci(
     # Ensure that the data is actually an array. This isn't nice to pandas,
     # but pandas seems much much slower and the indices become a problem.
     if multi and isinstance(data, Iterable):
-        tdata = tuple(np.array(x) for x in data)
+        tdata: "Tuple[NDArrayAny, ...]" = tuple(np.array(x) for x in data)
         lengths = [x.shape[0] for x in tdata]
         if (len(np.unique(lengths)) > 1) and multi != "independent":
             raise ValueError(
@@ -350,7 +372,7 @@ def ci(
             )
         return _ci_abc(
             tdata,
-            cast(StatFunctionWithWeights, statfunction),
+            statfunction,
             epsilon,
             alphas,
             output,
@@ -398,7 +420,7 @@ def ci(
     else:
         raise ValueError("Method {0} is not supported.".format(method))
 
-    nvals: np.ndarray = np.round((n_samples - 1) * avals)
+    nvals: "NDArrayAny" = np.round((n_samples - 1) * avals)
 
     oldnperr = np.seterr(invalid="ignore")
     if np.any(np.isnan(nvals)):
@@ -427,7 +449,7 @@ def ci(
     if output == "lowhigh":
         if nvals.ndim == 1:
             # All nvals are the same. Simple broadcasting
-            out: np.ndarray = stat[nvals]
+            out: "NDArrayAny" = stat[nvals]
         else:
             # Nvals are different for each data point. Not simple broadcasting.
             # Each set of nvals along axis 0 corresponds to the data at the same
@@ -435,10 +457,10 @@ def ci(
             out = stat[(nvals, np.indices(nvals.shape)[1:].squeeze())]
     elif output == "errorbar":
         if nvals.ndim == 1:
-            out = np.abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T
+            out = np.abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T  # type: ignore
         else:
             out = np.abs(
-                statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]
+                statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]  # type: ignore
             ).T.squeeze()
     else:
         raise ValueError("Output option {0} is not supported.".format(output))
@@ -450,13 +472,13 @@ def ci(
 
 
 def _ci_abc(
-    tdata: Tuple[np.ndarray, ...],
+    tdata: "Tuple[NDArrayAny, ...]",
     statfunction: StatFunctionWithWeights,
     epsilon: float,
-    alphas: np.ndarray,
+    alphas: "NDArrayAny",
     output: Literal["lowhigh", "errorbar"],
     multi: Union[bool, Literal["independent", "paired"]],
-) -> np.ndarray:
+) -> "NDArrayAny":
     if multi == "independent":
         raise NotImplementedError(
             "multi='independent' is not currently supported for ABC."
@@ -473,11 +495,11 @@ def _ci_abc(
     except TypeError as e:
         raise TypeError("statfunction does not accept correct arguments for ABC") from e
 
-    di_full = Imatrix - p0
-    tp = np.fromiter(
+    di_full: "NDArrayAny" = Imatrix - p0
+    tp: NDArrayAny = np.fromiter(
         (statfunction(*tdata, weights=p0 + ep * di) for di in di_full), dtype=float
     )
-    tm = np.fromiter(
+    tm: NDArrayAny = np.fromiter(
         (statfunction(*tdata, weights=p0 - ep * di) for di in di_full), dtype=float
     )
     t1 = (tp - tm) / (2 * ep)
@@ -497,27 +519,30 @@ def _ci_abc(
     Z = z0 + nppf(alphas)
     za = Z / (1 - a * Z) ** 2
     # stan = t0 + sighat * nppf(alphas)
-    abc: np.ndarray = np.zeros_like(alphas)
+    abc: "NDArrayAny" = np.zeros_like(alphas)
     for i in range(0, len(alphas)):
         abc[i] = statfunction(*tdata, weights=p0 + za[i] * delta)
 
     if output == "lowhigh":
         return abc
     elif output == "errorbar":
-        return cast(np.ndarray, abs(abc - statfunction(*tdata))[np.newaxis].T)
+        return cast(
+            NDArrayAny,
+            abs(abc - statfunction(*tdata))[np.newaxis].T,
+        )
 
     raise ValueError("Output option {0} is not supported.".format(output))
 
 
 def _avals_bca(
-    tdata: Tuple[np.ndarray, ...],
+    tdata: "Tuple[NDArrayAny, ...]",
     statfunction: StatFunction,
-    stat: np.ndarray,
-    alphas: np.ndarray,
+    stat: "NDArrayAny",
+    alphas: "NDArrayAny",
     n_samples: int,
     multi: Union[bool, Literal["paired"], Literal["independent"]],
     use_numba: bool = False,
-) -> np.ndarray:
+) -> "NDArrayAny":
     # The value of the statistic function applied just to the actual data.
     ostat = statfunction(*tdata)
 
@@ -569,7 +594,7 @@ be inaccurate.".format(
 
     zs = z0 + nppf(alphas).reshape(alphas.shape + (1,) * z0.ndim)
 
-    avals: np.ndarray = ncdf(z0 + zs / (1 - a * zs))
+    avals: "NDArrayAny" = ncdf(z0 + zs / (1 - a * zs))
     np.seterr(**oldnperr)
 
     return avals
@@ -581,8 +606,8 @@ if NUMBA_AVAILABLE:
 
     @njit(parallel=True, fastmath=True)  # type: ignore
     def _calculate_jackknife_mean_stat(
-        data: np.ndarray,
-    ) -> np.ndarray:  # pragma: no cover
+        data: "NDArrayAny",
+    ) -> "NDArrayAny":  # pragma: no cover
         n = data.shape[0]
         jstat = np.zeros(n)
         sum = data.sum()
@@ -594,8 +619,10 @@ if NUMBA_AVAILABLE:
 
     @njit(parallel=True, fastmath=True)  # type: ignore
     def _calculate_boostrap_mean_stat(
-        data: np.ndarray, n_samples: int, seed: Optional[int] = None
-    ) -> np.ndarray:  # pragma: no cover
+        data: "NDArrayAny",
+        n_samples: int,
+        seed: Optional[int] = None,
+    ) -> "NDArrayAny":  # pragma: no cover
         n = data.shape[0]
         stat = np.zeros(n_samples)
         for i in prange(n_samples):
@@ -606,8 +633,10 @@ if NUMBA_AVAILABLE:
 
 
 def bootstrap_indices(
-    data: np.ndarray, n_samples: int = 10000, seed: SeedType = None
-) -> Iterator[np.ndarray]:
+    data: "NDArrayAny",
+    n_samples: int = 10000,
+    seed: SeedType = None,
+) -> Iterator["NDArrayAny"]:
     """
     Given data points data, where axis 0 is considered to delineate points, return
     an generator for sets of bootstrap indices. This can be used as a list
@@ -620,15 +649,19 @@ def bootstrap_indices(
 
 
 def bootstrap_indices_independent(
-    data: Tuple[np.ndarray, ...], n_samples: int = 10000, seed: SeedType = None
-) -> Iterator[Tuple[np.ndarray, ...]]:
+    data: Tuple["NDArrayAny", ...],
+    n_samples: int = 10000,
+    seed: SeedType = None,
+) -> Iterator[Tuple["NDArrayAny", ...]]:
     rng = np.random.default_rng(seed=seed)
     dlens = [x.shape[0] for x in data]
     for _ in range(n_samples):
         yield tuple(rng.integers(low=0, high=dlen, size=(dlen,)) for dlen in dlens)
 
 
-def jackknife_indices(data: np.ndarray) -> Iterator[np.ndarray]:
+def jackknife_indices(
+    data: "NDArrayAny",
+) -> Iterator["NDArrayAny"]:
     """
     Given data points data, where axis 0 is considered to delineate points, return
     a list of arrays where each array is a set of jackknife indices.
@@ -641,8 +674,8 @@ def jackknife_indices(data: np.ndarray) -> Iterator[np.ndarray]:
 
 
 def jackknife_indices_independent(
-    data: Tuple[np.ndarray, ...]
-) -> Iterator[Tuple[np.ndarray, ...]]:
+    data: Tuple["NDArrayAny", ...]
+) -> Iterator[Tuple["NDArrayAny", ...]]:
     base = [np.arange(0, len(x)) for x in data]
     for i, b in enumerate(base):
         for j in base[i]:
@@ -650,8 +683,11 @@ def jackknife_indices_independent(
 
 
 def subsample_indices(
-    data: np.ndarray, n_samples: int = 1000, size: float = 0.5, seed: SeedType = None
-) -> np.ndarray:
+    data: "NDArrayAny",
+    n_samples: int = 1000,
+    size: float = 0.5,
+    seed: SeedType = None,
+) -> "NDArrayAny":
     """
     Given data points data, where axis 0 is considered to delineate points, return
     a list of arrays where each array is indices a subsample of the data of size
@@ -668,19 +704,21 @@ def subsample_indices(
         size = int(round(size * len(data)))
     elif size < 1:
         raise ValueError("size cannot be {0}".format(size))
-    base: np.ndarray = np.tile(np.arange(len(data)), (n_samples, 1))
+    elif size > len(data):
+        raise ValueError(f"Size {size} is larger than data size {len(data)}.")
+    base: "NDArrayAny" = np.tile(np.arange(len(data)), (n_samples, 1))
     for sample in base:
         rng.shuffle(sample)
-    return cast(np.ndarray, base[:, 0 : cast(int, size)])
+    return cast("NDArrayAny", base[:, 0 : cast(int, size)])
 
 
 def bootstrap_indices_moving_block(
-    data: np.ndarray,
+    data: "NDArrayAny",
     n_samples: int = 10000,
     block_length: int = 3,
     wrap: bool = False,
     seed: SeedType = None,
-) -> Iterator[np.ndarray]:
+) -> Iterator["NDArrayAny"]:
     """Generate moving-block bootstrap samples.
 
     Given data points `data`, where axis 0 is considered to delineate points,
@@ -724,7 +762,7 @@ def pval(
     n_samples: int = 10000,
     multi: Optional[bool] = None,
     seed: SeedType = None,
-) -> "Union[np.number[Any], np.ndarray]":
+) -> "Union[np.number[Any], NDArrayAny]":
     """
     Given a set of data ``data``, a statistics function ``statfunction`` that
     applies to that data, and the criteria function ``compfunction``, computes the
@@ -775,7 +813,7 @@ def pval(
     # but pandas seems much much slower and the indices become a problem.
     if not multi:
         data = np.array(data)
-        tdata: Tuple[np.ndarray, ...] = (data,)
+        tdata: Tuple["NDArrayAny", ...] = (data,)
     else:
         tdata = tuple(np.array(x) for x in data)
 
@@ -783,11 +821,14 @@ def pval(
     # Instead, we can generate just the indices, and then apply the statfun
     # to those indices.
     bootindices = bootstrap_indices(tdata[0], n_samples, seed=rng)
-    stat = np.array(
+    stat: "NDArrayAny" = np.array(
         [statfunction(*(x[indices] for x in tdata)) for indices in bootindices]
     )
     stat.sort(axis=0)
 
     pval_stat = [compfunction(s) for s in stat]
     # print pval_stat
-    return cast("Union[np.number[Any], np.ndarray]", np.mean(pval_stat, axis=0))
+    return cast(
+        "Union[np.number[Any], NDArrayAny]",
+        np.mean(pval_stat, axis=0),
+    )

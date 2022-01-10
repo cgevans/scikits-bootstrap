@@ -10,6 +10,9 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.7, 3.8, 3.9, "3.10"]
+        include:
+          - python-version: 3.7
+            extra-args: "--no-warn-unused-ignores"
     steps:
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -22,4 +25,4 @@ jobs:
           python -m pip install numpy pandas flake8 tox mypy
       - name: Mypy
         run: |
-          mypy --cache-dir .mypy_cache --install-types --non-interactive --strict --allow-untyped-calls --ignore-missing-imports --non-interactive ./src
+          mypy --cache-dir .mypy_cache --install-types ${{ matrix.extra-args }} --non-interactive --strict --allow-untyped-calls --ignore-missing-imports --non-interactive ./src

@@ -4,7 +4,12 @@ on: [push, pull_request]
 
 jobs:
   mypy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.7, 3.8, 3.9, "3.10"]
     steps:
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -14,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools_scm[toml] wheel setuptools
-          python -m pip install numpy flake8 tox mypy
+          python -m pip install numpy pandas flake8 tox mypy
       - name: Mypy
         run: |
           mypy --cache-dir .mypy_cache --install-types --non-interactive --strict --allow-untyped-calls --ignore-missing-imports --non-interactive ./src

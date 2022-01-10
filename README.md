@@ -14,11 +14,7 @@ Scikits.bootstrap provides bootstrap statistics confidence interval algorithms
 for Numpy/Scipy/Pandas. It originally required scipy, but no longer needs it.
 
 It also provides an algorithm which estimates the probability that the
-statistics lies satisfies some criteria, e.g. lies in some interval.
-
-At present, it is rather feature-incomplete and in flux. However, the
-functions that have been written should be relatively stable as far as
-results.
+statistics lies satisfies some criteria, e.g., lies in some interval.
 
 Much of the code has been written based off the descriptions from Efron
 and Tibshirani's Introduction to the Bootstrap, and results should match
@@ -27,11 +23,39 @@ current ABC code is based off of the modified-BSD-licensed R port of the
 Efron bootstrap code, as I do not believe I currently have a sufficient
 understanding of the ABC method to write the code independently.
 
-In any case, please contact me (Constantine Evans
-<cevans@evanslabs.org>) with any questions or suggestions. I'm trying to
-add documentation, and will be adding tests as well. I'm especially
-interested, however, in how the API should actually look; please let me
-know if you think the package should be organized differently.
+Please contact me (Constantine Evans <cevans@costinet.org>, or Matrix
+<@cge:matrix.org>) with any questions, suggestions, vulnerabilities, or other
+comments ([PGP key](https://costinet.org/new-cge-pgp.key)), or, preferably, use
+Github's issue and pull requests.
+
+If you'd like to add something, or make improvements, please keep the following
+in mind:
+
+- I'd like to keep the library as widely supported as possible, with as
+  few dependencies as possible, preferably small ones.  I'm also very
+  wary of anything that would break backwards compatibility, even in
+  unknown ways.
+
+- I am following semantic versioning.
+
+- Code should be black-formatted, should have type annotations that work
+  in 3.7 through the latest stable Python, and PyPy3.
+
+- Docstrings should be in Numpy format.  They should preferably include
+  references for the implemented algorithms (see the current code for
+  examples).
+
+- All code should have working unit tests, preferably ones that do more
+  than just testing fixed output with a fixed random seed, though given
+  the non-deterministic nature of the bootstrap, good, deterministic
+  tests may be difficult.  Non-deterministic tests with extremely small
+  chances of failure are acceptable, but shouldn't use such large numbers
+  of samples that they overly slow down the tests.
+
+- I am a physicist, and am not very familiar with applications of the
+  bootstrap for business or development statistics.  So if you'd like
+  to add something for those, it would be useful to give some more
+  explanation than otherwise as to how they are generally useful.
 
 The package is licensed under the BSD 3-Clause License. It is supported
 in part by the Evans Foundation.
@@ -39,7 +63,7 @@ in part by the Evans Foundation.
 Version Info
 ============
 
--   v1.1.0-pre.1: Randomness is now generated via a numpy.random
+-   v1.1.0-pre.2: Randomness is now generated via a numpy.random
     Generator. Anything that relied on using numpy.random.seed to obtain
     deterministic results will fail (mostly of relevance for testing).
     Seeds (or Generators) can now be passed to relevant functions with
@@ -52,7 +76,9 @@ Version Info
 
     Numba is now supported in some instances (np.average or np.mean as
     statfunction, 1-D data), using use\_numba=True. Pypy3 is also
-    supported. Typing information has been added.
+    supported. Typing information has been added, with code passing
+    `mypy --strict --allow-untyped-calls --ignore-missing-imports`, and
+    tests cover 100% of the code (though many tests use fixed seeds).
 
     Handling of multiple data sets (tuples/etc of arrays) now can be
     specified as multi="paired" (the previous handling), where the sets
@@ -86,7 +112,7 @@ Version Info
 Installation and Usage
 ======================
 
-scikits.bootstrap is tested on Python 3.6 - 3.9, and PyPy 3. The package
+scikits.bootstrap is tested on Python 3.7 - 3.10, and PyPy 3. The package
 can be installed using pip.
 
 `pip install scikits.bootstrap`

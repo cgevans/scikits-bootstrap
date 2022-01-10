@@ -44,11 +44,15 @@ if sys.version_info >= (3, 10):
     NDArrayAny: TypeAlias = "np.ndarray[Any, np.dtype[Any]]"
     NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.float_]]"
 elif sys.version_info >= (3, 9):
-    NDArrayAny = "np.ndarray[Any, np.dtype[Any]]"
-    NDArrayFloat = "np.ndarray[Any, np.dtype[np.float_]]"
+    from typing_extensions import TypeAlias
+
+    NDArrayAny: TypeAlias = "np.ndarray[Any, np.dtype[Any]]"
+    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.float_]]"
 else:
-    NDArrayAny = "np.ndarray"
-    NDArrayFloat = "np.ndarray"
+    from typing_extensions import TypeAlias
+
+    NDArrayAny: TypeAlias = "np.ndarray"
+    NDArrayFloat: TypeAlias = "np.ndarray"
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas

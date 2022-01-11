@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3548989.svg)](https://doi.org/10.5281/zenodo.3548989)
+[![DOI](https://zenodo.org/badge/5336221.svg)](https://zenodo.org/badge/latetdoi/5336221)
 [![Codecov](https://img.shields.io/codecov/c/github/cgevans/scikits-bootstrap)](https://codecov.io/gh/cgevans/scikits-bootstrap)
 [![PyPI](https://img.shields.io/pypi/v/scikits-bootstrap)](https://pypi.org/project/scikits.bootstrap/)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cgevans/scikits-bootstrap)](https://github.com/cgevans/scikits-bootstrap/releases)
@@ -59,6 +59,10 @@ in mind:
 
 The package is licensed under the BSD 3-Clause License. It is supported
 by the [Evans Foundation](https://evansfmm.org).
+
+I don't see a particular need to cite this package, but if you want to,
+please use the Zenodo DOI above, or the one appropriate for the version
+you used.
 
 Version Information
 ===================

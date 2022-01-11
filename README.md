@@ -1,8 +1,8 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3548989.svg)](https://doi.org/10.5281/zenodo.3548989)
 [![Codecov](https://img.shields.io/codecov/c/github/cgevans/scikits-bootstrap)](https://codecov.io/gh/cgevans/scikits-bootstrap)
 [![PyPI](https://img.shields.io/pypi/v/scikits-bootstrap)](https://pypi.org/project/scikits.bootstrap/)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cgevans/scikits-bootstrap)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/scikits-bootstrap)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cgevans/scikits-bootstrap)](https://github.com/cgevans/scikits-bootstrap/releases)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/scikits-bootstrap)](https://pypi.org/project/scikits.bootstrap/)
 
 
 Documentation: [Stable](https://scikits-bootstrap.readthedocs.io/en/stable/), [Latest](https://scikits-bootstrap.readthedocs.io/en/latest/).
@@ -38,7 +38,7 @@ in mind:
 
 - I am following semantic versioning.
 
-- Code should be black-formatted, should have type annotations that work
+- Code should be black-formatted, and should have type annotations that work
   in 3.7 through the latest stable Python, and PyPy3.
 
 - Docstrings should be in Numpy format.  They should preferably include
@@ -58,12 +58,12 @@ in mind:
   explanation than otherwise as to how they are generally useful.
 
 The package is licensed under the BSD 3-Clause License. It is supported
-in part by the Evans Foundation.
+by the [Evans Foundation](https://evansfmm.org).
 
-Version Info
-============
+Version Information
+===================
 
--   v1.1.0-pre.2: Randomness is now generated via a numpy.random
+-   v1.1.0: Randomness is now generated via a numpy.random
     Generator. Anything that relied on using numpy.random.seed to obtain
     deterministic results will fail (mostly of relevance for testing).
     Seeds (or Generators) can now be passed to relevant functions with

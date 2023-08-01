@@ -16,7 +16,7 @@ except ImportError:
 
 
 class TestCI:
-    def setup(self) -> None:
+    def setup_method(self) -> None:
         self.data = np.array(
             [
                 1.34016346,
@@ -124,7 +124,7 @@ class TestCI:
 
     def test_subsample_size_too_large(self) -> None:
         with pytest.raises(ValueError):
-            indices = boot.subsample_indices(self.data, 1000, 30)
+            boot.subsample_indices(self.data, 1000, 30)
 
     def test_subsample_indices_notsame(self) -> None:
         indices = boot.subsample_indices(np.arange(0, 50), 1000, -1)

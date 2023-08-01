@@ -2,7 +2,7 @@
 
 It also provides an algorithm which estimates the probability that the statistics
 lies satisfies some criteria, e.g. lies in some interval."""
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division, print_function, annotations
 
 from math import ceil, sqrt
 from typing import Sequence, cast, overload
@@ -454,9 +454,7 @@ def ci(
         if nvals.ndim == 1:
             out = np.abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T  # type: ignore
         else:
-            out = np.abs(
-                statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]  # type: ignore
-            ).T.squeeze()
+            out = np.abs(statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]).T.squeeze()  # type: ignore
     else:
         raise ValueError("Output option {0} is not supported.".format(output))
 
@@ -498,17 +496,17 @@ def _ci_abc(
         (statfunction(*tdata, weights=p0 - ep * di) for di in di_full), dtype=float
     )
     t1 = (tp - tm) / (2 * ep)
-    t2 = (tp - 2 * t0 + tm) / ep ** 2
+    t2 = (tp - 2 * t0 + tm) / ep**2
 
-    sighat = np.sqrt(np.sum(t1 ** 2)) / n
-    a = (np.sum(t1 ** 3)) / (6 * n ** 3 * sighat ** 3)
-    delta = t1 / (n ** 2 * sighat)
+    sighat = np.sqrt(np.sum(t1**2)) / n
+    a = (np.sum(t1**3)) / (6 * n**3 * sighat**3)
+    delta = t1 / (n**2 * sighat)
     cq = (
         statfunction(*tdata, weights=p0 + ep * delta)
         - 2 * t0
         + statfunction(*tdata, weights=p0 - ep * delta)
-    ) / (2 * sighat * ep ** 2)
-    bhat = np.sum(t2) / (2 * n ** 2)
+    ) / (2 * sighat * ep**2)
+    bhat = np.sum(t2) / (2 * n**2)
     curv = bhat / sighat - cq
     z0 = nppf(2 * ncdf(a) * ncdf(-curv))
     Z = z0 + nppf(alphas)

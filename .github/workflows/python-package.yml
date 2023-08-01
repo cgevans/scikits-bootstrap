@@ -1,13 +1,14 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Tests
+name: Linting and Tests
 
 on:
   [push, pull_request]
 
 jobs:
   tests:
+    name: Tests
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -52,6 +53,7 @@ jobs:
         fail_ci_if_error: false
   
   mypy:
+    name: Mypy checks
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -63,10 +65,10 @@ jobs:
             extra-args: "--no-warn-unused-ignores"
     steps:
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools_scm[toml] wheel setuptools
@@ -76,9 +78,10 @@ jobs:
           mypy --cache-dir .mypy_cache --install-types ${{ matrix.extra-args }} --non-interactive --strict --allow-untyped-calls --ignore-missing-imports --non-interactive ./src
       
   black:
+    name: Black checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: psf/black@stable
         with:
             options: "--check --verbose --diff"

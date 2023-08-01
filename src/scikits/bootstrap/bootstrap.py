@@ -454,7 +454,9 @@ def ci(
         if nvals.ndim == 1:
             out = np.abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T
         else:
-            out = np.abs(statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]).T.squeeze()
+            out = np.abs(
+                statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]
+            ).T.squeeze()
     else:
         raise ValueError("Output option {0} is not supported.".format(output))
 

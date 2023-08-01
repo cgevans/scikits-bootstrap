@@ -13,24 +13,24 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.7, 3.8, 3.9, "3.10", "3.11", pypy3]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "pypy3.10"]
         optionals: [none, pandas, numba]
         exclude:
-          - python-version: pypy3
+          - python-version: "pypy3.10"
             optionals: pandas
-          - python-version: pypy3
+          - python-version: "pypy3.10"
             optionals: numba
           - python-version: "3.11"
             optionals: numba
           - os: macos-latest
-            python-version: pypy3
+            python-version: "pypy3.10"
           - os: windows-latest
-            python-version: pypy3
+            python-version: "pypy3.10"
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -50,3 +50,37 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         fail_ci_if_error: false
+  
+  mypy:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        include:
+          - python-version: 3.7
+            extra-args: "--no-warn-unused-ignores"
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools_scm[toml] wheel setuptools
+          python -m pip install numpy pandas flake8 tox mypy
+      - name: Mypy
+        run: |
+          mypy --cache-dir .mypy_cache --install-types ${{ matrix.extra-args }} --non-interactive --strict --allow-untyped-calls --ignore-missing-imports --non-interactive ./src
+      
+  black:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: psf/black@stable
+        with:
+            options: "--check --verbose --diff"
+            src: "./src"
+          

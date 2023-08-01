@@ -452,9 +452,9 @@ def ci(
             out = stat[(nvals, np.indices(nvals.shape)[1:].squeeze())]
     elif output == "errorbar":
         if nvals.ndim == 1:
-            out = np.abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T  # type: ignore
+            out = np.abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T
         else:
-            out = np.abs(statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]).T.squeeze()  # type: ignore
+            out = np.abs(statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]).T.squeeze()
     else:
         raise ValueError("Output option {0} is not supported.".format(output))
 

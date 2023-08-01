@@ -8,7 +8,6 @@ ignore = ["F405", "F403"]
 
 [tool.mypy]
 ignore_missing_imports = true
-warn_unused_configs = true
 warn_return_any = true
 
 [tool.black]

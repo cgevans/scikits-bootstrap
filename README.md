@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/scikits-bootstrap)](https://pypi.org/project/scikits.bootstrap/)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cgevans/scikits-bootstrap)](https://github.com/cgevans/scikits-bootstrap/releases)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/scikits-bootstrap)](https://pypi.org/project/scikits.bootstrap/)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcgevans%2Fscikits-bootstrap.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcgevans%2Fscikits-bootstrap?ref=badge_shield)
 
 
 Documentation: [Stable](https://scikits-bootstrap.readthedocs.io/en/stable/), [Latest](https://scikits-bootstrap.readthedocs.io/en/latest/).
@@ -126,3 +127,7 @@ Usage example for python 3.x:
     import scikits.bootstrap as boot
     import numpy as np
     boot.ci(np.random.rand(100), np.average)
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcgevans%2Fscikits-bootstrap.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcgevans%2Fscikits-bootstrap?ref=badge_large)

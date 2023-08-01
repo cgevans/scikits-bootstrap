@@ -21,7 +21,6 @@ if sys.version_info >= (3, 8):
         Tuple,
         Iterable,
         Iterator,
-        Type,
         TYPE_CHECKING,
     )
 else:
@@ -62,9 +61,6 @@ __all__ = (
     "jackknife_indices",
     "bootstrap_indices_moving_block",
 )
-
-if False:
-    import pandas as pd
 
 s2 = sqrt(2)
 

@@ -423,7 +423,7 @@ def ci(
         else:
             bootindices = bootstrap_indices(tdata[0], n_samples, seed=rng)
             stat = np.array(
-                [statfunction(*(x[indices] for x in tdata)) for indices in bootindices]
+                [statfunction(*(x[indices] for x in tdata)) for indices in bootindices]  # type: ignore
             )
     else:
         if use_numba:
@@ -433,7 +433,7 @@ def ci(
         bootindices_ind = bootstrap_indices_independent(tdata, n_samples, seed=rng)
         stat = np.array(
             [
-                statfunction(*(x[i] for x, i in zip(tdata, indices)))
+                statfunction(*(x[i] for x, i in zip(tdata, indices)))  # type: ignore
                 for indices in bootindices_ind
             ]
         )
@@ -485,10 +485,10 @@ def ci(
             out = stat[(nvals, np.indices(nvals.shape)[1:].squeeze())]
     elif output == "errorbar":
         if nvals.ndim == 1:
-            out = np.abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T
+            out = np.abs(statfunction(*tdata) - stat[nvals])[np.newaxis].T  # type: ignore
         else:
             out = np.abs(
-                statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]
+                statfunction(*tdata) - stat[(nvals, np.indices(nvals.shape)[1:])]  # type: ignore
             ).T.squeeze()
     else:
         raise ValueError("Output option {0} is not supported.".format(output))

@@ -1,3 +1,2 @@
 numpy
-pyerf
 typing_extensions>=4.1

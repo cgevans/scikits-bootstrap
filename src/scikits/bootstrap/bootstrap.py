@@ -2,6 +2,7 @@
 
 It also provides an algorithm which estimates the probability that the statistics
 lies satisfies some criteria, e.g. lies in some interval."""
+
 from __future__ import absolute_import, division, print_function, annotations
 
 from math import ceil, sqrt, erf
@@ -65,7 +66,7 @@ s2 = sqrt(2)
 
 
 def _ncdf_py(x: float) -> float:
-    return 0.5 * (1 + cast(float, erf(x / s2)))
+    return 0.5 * (1 + erf(x / s2))
 
 
 ncdf = np.vectorize(_ncdf_py, [float])
@@ -157,8 +158,7 @@ def ci(
     return_dist: Literal[True],
     seed: SeedType = None,
     use_numba: bool = False,
-) -> "Tuple[NDArrayAny, NDArrayAny]":
-    ...
+) -> "Tuple[NDArrayAny, NDArrayAny]": ...
 
 
 @overload
@@ -175,8 +175,7 @@ def ci(
     return_dist: Literal[False] = False,
     seed: SeedType = None,
     use_numba: bool = False,
-) -> "NDArrayAny":
-    ...
+) -> "NDArrayAny": ...
 
 
 @overload
@@ -193,8 +192,7 @@ def ci(
     return_dist: Literal[True],
     seed: SeedType = None,
     use_numba: bool = False,
-) -> "Tuple[NDArrayAny, NDArrayAny]":
-    ...
+) -> "Tuple[NDArrayAny, NDArrayAny]": ...
 
 
 @overload
@@ -210,8 +208,7 @@ def ci(
     return_dist: Literal[False] = False,
     seed: SeedType = None,
     use_numba: bool = False,
-) -> "NDArrayAny":
-    ...
+) -> "NDArrayAny": ...
 
 
 def ci(

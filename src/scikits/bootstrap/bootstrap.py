@@ -71,7 +71,7 @@ def _ncdf_py(x: float) -> float:
 ncdf = np.vectorize(_ncdf_py, [float])
 
 # fmt: off
-def nppf(p):
+def nppf(p: Union[float, NDArrayFloat]) -> NDArrayFloat:
     p = np.asarray(p)
     out = np.empty_like(p, dtype=float)
     ix1 = (p < 0.02425) & (p > 0)

@@ -606,6 +606,7 @@ def _avals_bca(
         6.0 * np.sum((jmean - jstat) ** 2, axis=0) ** 1.5
     )
     if np.any(np.isnan(a)):
+        a = np.atleast_1d(a)
         nanind = np.nonzero(np.isnan(a))
         warnings.warn(
             "BCa acceleration values for indices {} were undefined. \

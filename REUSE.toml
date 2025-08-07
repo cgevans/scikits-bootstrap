@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: the scikits.bootstrap authors
+# SPDX-License-Identifier: BSD-3-Clause
+
 version = 1
 SPDX-PackageName = "scikits-bootstrap"
 SPDX-PackageSupplier = "Constantine Evans <cevans@costinet.org>"

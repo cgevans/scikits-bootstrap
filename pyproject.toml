@@ -84,13 +84,23 @@ all = [
 dependencies = [
     "pytest>=6",
     "pytest-cov",
+    "coverage[toml]",
 ]
 type = "pip-compile"
 pip-compile-resolver = "uv"
 
+[tool.hatch.envs.hatch-test.env-vars]
+COVERAGE_FILE = ".coverage.{env_name}"
+
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest {args:tests}"
 run-cov = "pytest --cov-report=term-missing --cov-report=xml --cov=src/scikits/bootstrap {args:tests}"
+cov-combine = "coverage combine"
+cov-report = [
+    "coverage report --fail-under=85",
+    "coverage xml",
+]
+cov-html = "coverage html"
 
 [[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.13", "3.14"]
@@ -128,6 +138,18 @@ matrix.numba.dependencies = [
 
 
 
+[tool.hatch.envs.coverage]
+dependencies = [
+    "coverage[toml]",
+]
+[tool.hatch.envs.coverage.scripts]
+combine = "coverage combine"
+report = [
+    "coverage report --fail-under=85",
+    "coverage xml",
+]
+html = "coverage html"
+
 [tool.hatch.envs.docs]
 dependencies = [
     "sphinx",
@@ -146,6 +168,21 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.coverage.run]
+source = ["src/scikits/bootstrap"]
+parallel = true
+branch = true
+
+[tool.coverage.paths]
+source = [
+    "src/scikits/bootstrap",
+    "*/site-packages/scikits/bootstrap",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 85
 
 [tool.mypy]
 strict = true

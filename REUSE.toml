@@ -1,0 +1,34 @@
+version = 1
+SPDX-PackageName = "scikits-bootstrap"
+SPDX-PackageSupplier = "Constantine Evans <cevans@costinet.org>"
+SPDX-PackageDownloadLocation = "https://github.com/cgevans/scikits-bootstrap"
+
+[[annotations]]
+path = ["pyproject.toml", "README.md", "CLAUDE.md", "requirements.txt", ".gitignore", ".landscape.yaml", ".pre-commit-config.yaml", ".readthedocs.yml"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "the scikits.bootstrap authors"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+path = [".github/workflows/**.yml", ".github/PYPI_SETUP.md"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "the scikits.bootstrap authors"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+path = ["docs/Makefile", "docs/make.bat", "docs/source/**.py", "docs/source/**.rst"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "the scikits.bootstrap authors"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+path = "tests/**.py"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "the scikits.bootstrap authors"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+path = "src/scikits/bootstrap/py.typed"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "the scikits.bootstrap authors"
+SPDX-License-Identifier = "BSD-3-Clause"

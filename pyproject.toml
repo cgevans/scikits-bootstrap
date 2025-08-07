@@ -142,6 +142,7 @@ report = [
     "coverage xml",
 ]
 html = "coverage html"
+xml = "coverage xml"
 
 [tool.hatch.envs.docs]
 dependencies = [

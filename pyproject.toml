@@ -112,6 +112,13 @@ numba = ["no_numba", "numba"]
 reqs = ["latest"]
 
 [[tool.hatch.envs.hatch-test.matrix]]
+python = ["pypy3.10"]
+numpy = ["numpy2"]
+pandas = ["no_pandas"]
+numba = ["no_numba"]
+reqs = ["latest"]
+
+[[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.8"]
 numpy = ["numpy1"]
 pandas = ["no_pandas", "pandas"]

@@ -181,6 +181,7 @@ show_missing = true
 fail_under = 85
 exclude_lines = [
     "@overload",
+    "pragma: no cover",
 ]
 
 [tool.mypy]

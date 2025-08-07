@@ -90,7 +90,7 @@ pip-compile-resolver = "uv"
 
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest {args:tests}"
-cov = "pytest --cov-report=term-missing --cov-report=xml --cov=src/scikits/bootstrap {args:tests}"
+run-cov = "pytest --cov-report=term-missing --cov-report=xml --cov=src/scikits/bootstrap {args:tests}"
 
 [[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.13", "3.14"]

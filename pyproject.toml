@@ -106,19 +106,18 @@ matrix.reqs.pip-compile-args = [{ value = "--resolution=lowest", if = ["minimum"
 
 [tool.hatch.envs.lint]
 dependencies = [
-    "black",
     "ruff",
     "mypy",
 ]
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/scikits tests}"
 style = [
-    "ruff {args:.}",
-    "black --check --diff {args:.}",
+    "ruff check {args:.}",
+    "ruff format --check {args:.}",
 ]
 fmt = [
-    "black {args:.}",
-    "ruff --fix {args:.}",
+    "ruff format {args:.}",
+    "ruff check --fix {args:.}",
     "style",
 ]
 all = [
@@ -136,12 +135,15 @@ build = "sphinx-build -b html docs/source docs/build/html"
 serve = "python -m http.server --directory docs/build/html"
 
 [tool.ruff]
-line-length = 120
-ignore = ["F405", "F403"]
+line-length = 88
+lint.ignore = ["F405", "F403"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.mypy]
 ignore_missing_imports = true
 warn_return_any = true
-
-[tool.black]
-line-length = 88

@@ -41,12 +41,12 @@ if sys.version_info >= (3, 10):
     from typing import TypeAlias
 
     NDArrayAny: TypeAlias = "np.ndarray[Any, np.dtype[Any]]"
-    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.float_]]"
+    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.floating[Any]]]"
 else:
     from typing_extensions import TypeAlias
 
     NDArrayAny: TypeAlias = "np.ndarray[Any, np.dtype[Any]]"
-    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.float_]]"
+    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.floating[Any]]]"
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -70,6 +70,7 @@ def _ncdf_py(x: float) -> float:
 
 
 ncdf = np.vectorize(_ncdf_py, [float])
+
 
 # fmt: off
 def nppf(p: Union[float, NDArrayFloat]) -> NDArrayFloat:
@@ -611,9 +612,7 @@ def _avals_bca(
         warnings.warn(
             "BCa acceleration values for indices {} were undefined. \
 Statistic values were likely all equal. Affected CI will \
-be inaccurate.".format(
-                nanind
-            ),
+be inaccurate.".format(nanind),
             InstabilityWarning,
             stacklevel=2,
         )
@@ -700,7 +699,7 @@ def jackknife_indices(
 
 
 def jackknife_indices_independent(
-    data: Tuple["NDArrayAny", ...]
+    data: Tuple["NDArrayAny", ...],
 ) -> Iterator[Tuple["NDArrayAny", ...]]:
     base = [np.arange(0, len(x)) for x in data]
     for i, b in enumerate(base):

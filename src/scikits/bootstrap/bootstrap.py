@@ -24,7 +24,7 @@ if sys.version_info >= (3, 8):
         Iterator,
         TYPE_CHECKING,
     )
-else:
+else:  # pragma: no cover
     from typing_extensions import Literal, TYPE_CHECKING
     from typing import Union, Iterable, Any, Optional, Iterator, Callable, Tuple
 
@@ -42,7 +42,7 @@ if sys.version_info >= (3, 10):
 
     NDArrayAny: TypeAlias = "np.ndarray[Any, np.dtype[Any]]"
     NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.floating[Any]]]"
-else:
+else:  # pragma: no cover
     from typing_extensions import TypeAlias
 
     NDArrayAny: TypeAlias = "np.ndarray[Any, np.dtype[Any]]"

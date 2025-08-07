@@ -89,18 +89,11 @@ dependencies = [
 type = "pip-compile"
 pip-compile-resolver = "uv"
 
-[tool.hatch.envs.hatch-test.env-vars]
-COVERAGE_FILE = ".coverage.{env_name}"
-
 [tool.hatch.envs.hatch-test.scripts]
-run = "pytest {args:tests}"
-run-cov = "pytest --cov-report=term-missing --cov-report=xml --cov=src/scikits/bootstrap {args:tests}"
+run = "pytest{env:HATCH_TEST_ARGS:} {args}"
+run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
 cov-combine = "coverage combine"
-cov-report = [
-    "coverage report --fail-under=85",
-    "coverage xml",
-]
-cov-html = "coverage html"
+cov-report = "coverage report"
 
 [[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.13", "3.14"]

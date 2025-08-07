@@ -734,7 +734,7 @@ def subsample_indices(
     base: "NDArrayAny" = np.tile(np.arange(len(data)), (n_samples, 1))
     for sample in base:
         rng.shuffle(sample)
-    return cast("NDArrayAny", base[:, 0 : cast(int, size)])
+    return base[:, 0 : cast(int, size)]
 
 
 def bootstrap_indices_moving_block(

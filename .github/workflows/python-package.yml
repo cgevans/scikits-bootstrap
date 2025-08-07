@@ -27,7 +27,7 @@ jobs:
         python -m pip install hatch
     - name: Test with hatch
       run: |
-        hatch test --cover -a -i py=${{ matrix.python-version }}
+        hatch test --cover -i py=${{ matrix.python-version }}
     - name: "Upload coverage to Codecov"
       uses: codecov/codecov-action@v3
   

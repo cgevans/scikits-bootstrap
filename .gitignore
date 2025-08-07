@@ -35,3 +35,5 @@ htmlcov
 docs/build
 coverage.xml
 .vscode
+
+requirements/

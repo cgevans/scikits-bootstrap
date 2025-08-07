@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: the scikits.bootstrap authors
+# SPDX-License-Identifier: BSD-3-Clause
 """Scikits.bootstrap provides bootstrap confidence interval algorithms for scipy.
 
 It also provides an algorithm which estimates the probability that the statistics

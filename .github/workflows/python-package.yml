@@ -43,20 +43,20 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.13
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.13
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install hatch
       - uses: actions/checkout@v3
-      - name: Mypy
+      - name: Mypy for ${{ matrix.python-version }}
         run: |
-          hatch run lint:typing
+          hatch run lint:typing --python-version ${{ matrix.python-version }}
 
   ruff_lint:
     name: "Ruff: linting"

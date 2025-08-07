@@ -179,6 +179,10 @@ source = [
 [tool.coverage.report]
 show_missing = true
 fail_under = 85
+exclude_lines = [
+    "@overload",
+    "\\.\\.\\.$",
+]
 
 [tool.mypy]
 strict = true

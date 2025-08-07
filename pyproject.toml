@@ -1,14 +1,192 @@
 [build-system]
-requires = ["setuptools>=56", "setuptools_scm[toml]>=3.4.1"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "pip"]
+build-backend = "hatchling.build"
+
+[project]
+name = "scikits.bootstrap"
+version = "1.1.1"
+description = "Bootstrap confidence interval estimation routines for Numpy/Scipy/Pandas"
+readme = "README.md"
+requires-python = ">=3.7"
+license = "BSD-3-Clause"
+authors = [
+    {name = "Constantine Evans", email = "cevans@costinet.org"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
+dependencies = [
+    "numpy>=1.22.0",
+    "typing_extensions>=4.1; python_version<'3.10'",
+]
+
+[project.urls]
+Homepage = "http://github.com/cgevans/scikits-bootstrap"
+Repository = "http://github.com/cgevans/scikits-bootstrap"
+Documentation = "https://scikits-bootstrap.readthedocs.io/"
+Issues = "https://github.com/cgevans/scikits-bootstrap/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scikits"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "README.md",
+    "LICENSE",
+]
+
+[tool.hatch.env]
+requires = ["hatch-pip-compile", "pip"]
+
+
+[tool.hatch.envs.lint]
+dependencies = [
+    "ruff",
+    "mypy",
+]
+
+[tool.hatch.envs.lint.scripts]
+typing = "mypy --install-types --non-interactive {args:src/}"
+style = [
+    "ruff check {args:.}",
+    "ruff format --check {args:.}",
+]
+fmt = [
+    "ruff format {args:.}",
+    "ruff check --fix {args:.}",
+    "style",
+]
+all = [
+    "style",
+    "typing",
+]
+
+
+[tool.hatch.envs.hatch-test]
+dependencies = [
+    "pytest>=6",
+    "pytest-cov",
+    "coverage[toml]",
+]
+type = "pip-compile"
+pip-compile-resolver = "uv"
+
+[tool.hatch.envs.hatch-test.scripts]
+run = "pytest{env:HATCH_TEST_ARGS:} {args}"
+run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
+cov-combine = "coverage combine"
+cov-report = "coverage report"
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.13", "3.14"]
+numpy = ["numpy2"]
+pandas = ["no_pandas", "pandas"]
+numba = ["no_numba", "numba"]
+reqs = ["latest"]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.9", "3.10", "3.11", "3.12"]
+numpy = ["numpy1", "numpy2"]
+pandas = ["no_pandas", "pandas"]
+numba = ["no_numba", "numba"]
+reqs = ["latest"]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.8"]
+numpy = ["numpy1"]
+pandas = ["no_pandas", "pandas"]
+numba = ["no_numba"]
+reqs = ["latest"]
+
+[tool.hatch.envs.hatch-test.overrides]
+matrix.numpy.dependencies = [
+    { value = "numpy>=1.21,<2.0", if = ["numpy1"] },
+    { value = "numpy>=2.0,<3.0", if = ["numpy2"] },
+]
+matrix.pandas.dependencies = [
+    { value = "pandas>=1.2", if  = ["pandas"]}
+]
+matrix.numba.dependencies = [
+    { value = "numba>=0.38", if  = ["numba"]}
+]
+# matrix.reqs.pip-compile-args = { value = "--resolution=lowest", if = ["minimum"] }
+
+
+
+[tool.hatch.envs.coverage]
+dependencies = [
+    "coverage[toml]",
+]
+[tool.hatch.envs.coverage.scripts]
+combine = "coverage combine"
+report = [
+    "coverage report --fail-under=85",
+    "coverage xml",
+]
+html = "coverage html"
+xml = "coverage xml"
+
+[tool.hatch.envs.docs]
+dependencies = [
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+[tool.hatch.envs.docs.scripts]
+build = "sphinx-build -b html docs/source docs/build/html"
+serve = "python -m http.server --directory docs/build/html"
 
 [tool.ruff]
-line-length = 120
-ignore = ["F405", "F403"]
+line-length = 88
+lint.ignore = ["F405", "F403"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.coverage.run]
+source = ["src/scikits/bootstrap"]
+parallel = true
+branch = true
+
+[tool.coverage.paths]
+source = [
+    "src/scikits/bootstrap",
+    "*/site-packages/scikits/bootstrap",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 85
+exclude_lines = [
+    "@overload",
+    "pragma: no cover",
+]
 
 [tool.mypy]
+strict = true
+disallow_untyped_calls = false
 ignore_missing_imports = true
 warn_return_any = true
-
-[tool.black]
-line-length = 88
+cache_dir = ".mypy_cache"

@@ -24,7 +24,7 @@ if sys.version_info >= (3, 8):
         Iterator,
         TYPE_CHECKING,
     )
-else:
+else:  # pragma: no cover
     from typing_extensions import Literal, TYPE_CHECKING
     from typing import Union, Iterable, Any, Optional, Iterator, Callable, Tuple
 
@@ -41,12 +41,12 @@ if sys.version_info >= (3, 10):
     from typing import TypeAlias
 
     NDArrayAny: TypeAlias = "np.ndarray[Any, np.dtype[Any]]"
-    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.float_]]"
-else:
+    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.floating[Any]]]"
+else:  # pragma: no cover
     from typing_extensions import TypeAlias
 
     NDArrayAny: TypeAlias = "np.ndarray[Any, np.dtype[Any]]"
-    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.float_]]"
+    NDArrayFloat: TypeAlias = "np.ndarray[Any, np.dtype[np.floating[Any]]]"
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -71,6 +71,7 @@ def _ncdf_py(x: float) -> float:
 
 ncdf = np.vectorize(_ncdf_py, [float])
 
+
 # fmt: off
 def nppf(p: Union[float, NDArrayFloat]) -> NDArrayFloat:
     p = np.asarray(p)
@@ -78,10 +79,10 @@ def nppf(p: Union[float, NDArrayFloat]) -> NDArrayFloat:
     ix1 = (p < 0.02425) & (p > 0)
     oix1 = np.sqrt(-2 * np.log(p[ix1]))
     out[ix1] = (
-            (((((-7.784894002430293e-03 * oix1 - 3.223964580411365e-01) * oix1 
-                - 2.400758277161838e00) * oix1 - 2.549732539343734e00) * oix1 
+            (((((-7.784894002430293e-03 * oix1 - 3.223964580411365e-01) * oix1
+                - 2.400758277161838e00) * oix1 - 2.549732539343734e00) * oix1
                 + 4.374664141464968e00) * oix1 + 2.938163982698783e00)
-            / ((((7.784695709041462e-03 * oix1 + 3.224671290700398e-01) * oix1 
+            / ((((7.784695709041462e-03 * oix1 + 3.224671290700398e-01) * oix1
                  + 2.445134137142996e00) * oix1 + 3.754408661907416e00) * oix1 + 1)
         )
 
@@ -89,25 +90,25 @@ def nppf(p: Union[float, NDArrayFloat]) -> NDArrayFloat:
     oix2 = (p[ix2] - 0.5)
     sq = oix2 * oix2
     out[ix2] = (
-            (((((-3.969683028665376e01 * sq + 2.209460984245205e02) * sq 
-                - 2.759285104469687e02) * sq + 1.383577518672690e02) * sq 
+            (((((-3.969683028665376e01 * sq + 2.209460984245205e02) * sq
+                - 2.759285104469687e02) * sq + 1.383577518672690e02) * sq
                 - 3.066479806614716e01) * sq + 2.506628277459239e00) * oix2
-        ) / (((((-5.447609879822406e01 * sq + 1.615858368580409e02) * sq 
-                - 1.556989798598866e02) * sq + 6.680131188771972e01) * sq 
+        ) / (((((-5.447609879822406e01 * sq + 1.615858368580409e02) * sq
+                - 1.556989798598866e02) * sq + 6.680131188771972e01) * sq
                 - 1.328068155288572e01) * sq + 1)
 
     ix3 = (p > 0.97575) & (p < 1)
     oix3 = np.sqrt(-2 * np.log(1 - p[ix3]))
     out[ix3] = -(
-            (((((-7.784894002430293e-03 * oix3 - 3.223964580411365e-01) * oix3 
-                - 2.400758277161838e00) * oix3 - 2.549732539343734e00) * oix3 
+            (((((-7.784894002430293e-03 * oix3 - 3.223964580411365e-01) * oix3
+                - 2.400758277161838e00) * oix3 - 2.549732539343734e00) * oix3
                 + 4.374664141464968e00) * oix3 + 2.938163982698783e00)
-            / ((((7.784695709041462e-03 * oix3 + 3.224671290700398e-01) * oix3 
+            / ((((7.784695709041462e-03 * oix3 + 3.224671290700398e-01) * oix3
                  + 2.445134137142996e00) * oix3 + 3.754408661907416e00) * oix3 + 1)
         )
     out[p == 0] = -np.inf
     out[p == 1] = np.inf
-    
+
     return out
 # fmt: on
 
@@ -611,9 +612,7 @@ def _avals_bca(
         warnings.warn(
             "BCa acceleration values for indices {} were undefined. \
 Statistic values were likely all equal. Affected CI will \
-be inaccurate.".format(
-                nanind
-            ),
+be inaccurate.".format(nanind),
             InstabilityWarning,
             stacklevel=2,
         )
@@ -700,7 +699,7 @@ def jackknife_indices(
 
 
 def jackknife_indices_independent(
-    data: Tuple["NDArrayAny", ...]
+    data: Tuple["NDArrayAny", ...],
 ) -> Iterator[Tuple["NDArrayAny", ...]]:
     base = [np.arange(0, len(x)) for x in data]
     for i, b in enumerate(base):
@@ -735,7 +734,7 @@ def subsample_indices(
     base: "NDArrayAny" = np.tile(np.arange(len(data)), (n_samples, 1))
     for sample in base:
         rng.shuffle(sample)
-    return cast("NDArrayAny", base[:, 0 : cast(int, size)])
+    return base[:, 0 : cast(int, size)]
 
 
 def bootstrap_indices_moving_block(

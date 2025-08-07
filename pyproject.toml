@@ -56,6 +56,30 @@ include = [
 [tool.hatch.env]
 requires = ["hatch-pip-compile", "pip"]
 
+
+[tool.hatch.envs.lint]
+dependencies = [
+    "ruff",
+    "mypy",
+]
+
+[tool.hatch.envs.lint.scripts]
+typing = "mypy --install-types --non-interactive {args:src/}"
+style = [
+    "ruff check {args:.}",
+    "ruff format --check {args:.}",
+]
+fmt = [
+    "ruff format {args:.}",
+    "ruff check --fix {args:.}",
+    "style",
+]
+all = [
+    "style",
+    "typing",
+]
+
+
 [tool.hatch.envs.hatch-test]
 dependencies = [
     "pytest>=6",
@@ -100,30 +124,9 @@ matrix.pandas.dependencies = [
 matrix.numba.dependencies = [
     { value = "numba>=0.38", if  = ["numba"]}
 ]
-matrix.reqs.pip-compile-args = [{ value = "--resolution=lowest", if = ["minimum"] }]
+# matrix.reqs.pip-compile-args = { value = "--resolution=lowest", if = ["minimum"] }
 
 
-
-[tool.hatch.envs.lint]
-dependencies = [
-    "ruff",
-    "mypy",
-]
-[tool.hatch.envs.lint.scripts]
-typing = "mypy --install-types --non-interactive {args:src/scikits tests}"
-style = [
-    "ruff check {args:.}",
-    "ruff format --check {args:.}",
-]
-fmt = [
-    "ruff format {args:.}",
-    "ruff check --fix {args:.}",
-    "style",
-]
-all = [
-    "style",
-    "typing",
-]
 
 [tool.hatch.envs.docs]
 dependencies = [
@@ -145,5 +148,8 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.mypy]
+strict = true
+disallow_untyped_calls = false
 ignore_missing_imports = true
 warn_return_any = true
+cache_dir = ".mypy_cache"

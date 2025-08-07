@@ -51,6 +51,7 @@ include = [
     "/src",
     "/tests",
     "/docs",
+    "/benchmarks",
     "README.md",
     "LICENSE",
 ]
@@ -161,6 +162,20 @@ dependencies = [
 [tool.hatch.envs.docs.scripts]
 build = "sphinx-build -b html docs/source docs/build/html"
 serve = "python -m http.server --directory docs/build/html"
+
+[tool.hatch.envs.benchmarks]
+dependencies = [
+    "psutil>=5.8.0",
+    "pandas>=1.2",
+    "numba>=0.38; platform_python_implementation == 'CPython'",
+]
+[tool.hatch.envs.benchmarks.scripts]
+run = "python benchmarks/run_benchmarks.py {args}"
+quick = "python benchmarks/run_benchmarks.py --benchmark-only {args}"
+memory = "python benchmarks/run_benchmarks.py --memory-only {args}"
+full = "python benchmarks/run_benchmarks.py --json --csv {args}"
+check = "python benchmarks/run_benchmarks.py --check-regressions {args}"
+baseline = "python benchmarks/manage_baselines.py {args}"
 
 [tool.ruff]
 line-length = 88

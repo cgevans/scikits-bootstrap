@@ -248,7 +248,7 @@ class TestCI:
         assert_allclose(results1, np.array([2.547619, 7.97619]))
 
     def test_allequal_warn(self) -> None:
-        with pytest.warns(InstabilityWarning, match="NaN"):
+        with pytest.warns(InstabilityWarning, match="(NaN|all equal)"):
             boot.ci(np.ones(20), seed=self.seed)
 
     def test_extremal_warn(self) -> None:

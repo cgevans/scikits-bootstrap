@@ -28,11 +28,15 @@ jobs:
     - name: Test with hatch
       run: |
         hatch test --cover -i py=${{ matrix.python-version }}
+    - name: List directory for debugging
+      run: |
+        ls -la -R .
+        pwd
     - name: Upload coverage reports
       uses: actions/upload-artifact@v4
       with:
         name: coverage-${{ matrix.os }}-${{ matrix.python-version }}
-        path: .coverage
+        path: ./.coverage
         retention-days: 1
 
   coverage:

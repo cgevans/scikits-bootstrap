@@ -35,7 +35,7 @@ jobs:
         files: ./coverage.xml
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: true
-  
+
   mypy:
     name: Mypy checks
     runs-on: ${{ matrix.os }}
@@ -57,7 +57,7 @@ jobs:
       - name: Mypy
         run: |
           hatch run lint:typing
-      
+
   ruff_lint:
     name: "Ruff: linting"
     runs-on: ubuntu-latest

@@ -23,7 +23,7 @@ current ABC code is based off of the modified-BSD-licensed R port of the
 Efron bootstrap code, as I do not believe I currently have a sufficient
 understanding of the ABC method to write the code independently.
 
-Please contact me (Constantine Evans <cevans@costinet.org>, or Matrix
+Please contact me (Constantine Evans <bootstrap@mb.costi.net>, or Matrix
 <@cge:matrix.org>) with any questions, suggestions, vulnerabilities, or other
 comments ([PGP key](https://costinet.org/new-cge-pgp.key)), or, preferably, use
 Github's issue and pull requests.
@@ -38,8 +38,8 @@ in mind:
 
 - I am following semantic versioning.
 
-- Code should be black-formatted, and should have type annotations that work
-  in 3.7 through the latest stable Python, and PyPy3.
+- Code should be formatted with Ruff, and should have type annotations that
+  work in 3.8 through the latest stable Python and PyPy3.
 
 - Docstrings should be in Numpy format.  They should preferably include
   references for the implemented algorithms (see the current code for
@@ -66,6 +66,10 @@ you used.
 
 Version Information
 ===================
+
+-   v1.1.1: Compatibility updates for Numpy 2 (thank you @sobue-code, #38),
+    replacement of pyerf with math.erf, changes to build and testing system
+    (using hatch). Python 3.7 is no longer supported.
 
 -   v1.1.0: Randomness is now generated via a numpy.random
     Generator. Anything that relied on using numpy.random.seed to obtain
@@ -116,7 +120,7 @@ Version Information
 Installation and Usage
 ======================
 
-scikits.bootstrap is tested on Python 3.7 - 3.10, and PyPy 3. The package
+scikits.bootstrap is tested on Python 3.8 - 3.13, and PyPy 3. The package
 can be installed using pip.
 
 `pip install scikits.bootstrap`

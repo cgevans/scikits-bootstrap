@@ -69,7 +69,14 @@ run = "pytest {args:tests}"
 cov = "pytest --cov-report=term-missing --cov-report=xml --cov=src/scikits/bootstrap {args:tests}"
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+python = ["3.13", "3.14"]
+numpy = ["numpy2"]
+pandas = ["no_pandas", "pandas"]
+numba = ["no_numba", "numba"]
+reqs = ["latest"]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.9", "3.10", "3.11", "3.12"]
 numpy = ["numpy1", "numpy2"]
 pandas = ["no_pandas", "pandas"]
 numba = ["no_numba", "numba"]
